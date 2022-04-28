@@ -11,9 +11,11 @@
   },
   "scripts": {
     "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
     "deploy-kdx-token": "npx hardhat run --network kai scripts/kdx.js",
     "deploy-masterchef": "npx hardhat run --network kai scripts/masterchef.js",
     "test-masterchef": "npx hardhat test test/masterchef-test.js",
+    "test-masterchefv2": "npx hardhat test test/masterchefv2-test.js",
     "test-stKdx": "npx hardhat test test/stKDX-test.js"
   },
   "dependencies": {
