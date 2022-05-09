@@ -7,10 +7,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../KaidexToken.sol";
-
-interface IMigratorChef {
-    function migrate(IERC20 token) external returns (IERC20);
-}
+import "../interfaces/IRewarder.sol";
 
 contract KaidexMasterChef is Ownable {
     using SafeMath for uint256;
@@ -29,16 +26,13 @@ contract KaidexMasterChef is Ownable {
     }
     // The KDX TOKEN
     KaiDexToken public kdx;
-    // Dev address.
-    address public devaddr;
-    // Block number when bonus KDX period ends.
-    uint256 public bonusEndBlock;
+    
     // KDX tokens created per block.
-    uint256 public kdxPerBlock;
-    // Bonus muliplier for early kaidex makers.
-    uint256 public constant BONUS_MULTIPLIER = 10;
+    uint256 public kdxPerBlock; 
+    
     // The migrator contract. It has a lot of power. Can only be set through governance (owner).
-    IMigratorChef public migrator;
+    // IMigratorChef public migrator;
+
     // Info of each pool.
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
@@ -49,6 +43,11 @@ contract KaidexMasterChef is Ownable {
 
     // The block number when KDX mining starts.
     uint256 public startBlock;
+
+    /// @notice Address of each `IRewarder` contract.
+    IRewarder[] public rewarder;
+
+
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(
@@ -57,22 +56,43 @@ contract KaidexMasterChef is Ownable {
         uint256 amount
     );
 
+    event LogPoolAddition(
+        uint256 indexed pid, 
+        uint256 allocPoint, 
+        IERC20 indexed lpToken, 
+        IRewarder indexed rewarder
+    );
+    event LogSetPool(
+        uint256 indexed pid, 
+        uint256 allocPoint, 
+        IRewarder indexed rewarder, 
+        bool overwrite
+    );
+    event LogUpdatePool(
+        uint256 indexed pid, 
+        uint256 lastRewardBlock, 
+        uint256 lpSupply, 
+        uint256 accSushiPerShare
+    );
+
     constructor(
         KaiDexToken _kdx,
-        address _devaddr,
         uint256 _kdxPerBlock,
-        uint256 _startBlock,
-        uint256 _bonusEndBlock
+        uint256 _startBlock
     ) public {
         kdx = _kdx;
-        devaddr = _devaddr;
         kdxPerBlock = _kdxPerBlock;
         startBlock = _startBlock;
-        bonusEndBlock = _bonusEndBlock;
     }
 
     function poolLength() external view returns (uint256) {
         return poolInfo.length;
+    }
+
+    // updateKdxPerBlock, can update the kdx per block only onwer can update this field
+    function updateKdxPerBlock(uint256 _kdxPerBlock) public onlyOwner {
+        massUpdatePools();
+        kdxPerBlock = _kdxPerBlock;
     }
 
     // Add a new lp to the pool. Can only be called by the owner.
@@ -80,6 +100,7 @@ contract KaidexMasterChef is Ownable {
     function add(
         uint256 _allocPoint,
         IERC20 _lpToken,
+        IRewarder _rewarder,
         bool _withUpdate
     ) public onlyOwner {
         if (_withUpdate) {
@@ -96,54 +117,36 @@ contract KaidexMasterChef is Ownable {
                 accKDXPerShare: 0
             })
         );
+        rewarder.push(_rewarder);
+        emit LogPoolAddition(poolInfo.length.sub(1), _allocPoint, _lpToken, _rewarder);
     }
 
-    // Update the given pool's KAIDEX allocation point. Can only be called by the owner.
+    // Update the given pool's KDX allocation point or rewarder. Can only be called by the owner.
     function set(
         uint256 _pid,
         uint256 _allocPoint,
-        bool _withUpdate
+        bool _withUpdate,
+        IRewarder _rewarder,
+        bool overwrite
     ) public onlyOwner {
         if (_withUpdate) {
             massUpdatePools();
         }
-        totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
+        totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(
+            _allocPoint
+        );
         poolInfo[_pid].allocPoint = _allocPoint;
-    }
-
-    // Set the migrator contract. Can only be called by the owner.
-    function setMigrator(IMigratorChef _migrator) public onlyOwner {
-        migrator = _migrator;
-    }
-
-    // Migrate lp token to another lp contract. Can be called by anyone. We trust that migrator contract is good.
-    function migrate(uint256 _pid) public {
-        require(address(migrator) != address(0), "migrate: no migrator");
-        PoolInfo storage pool = poolInfo[_pid];
-        IERC20 lpToken = pool.lpToken;
-        uint256 bal = lpToken.balanceOf(address(this));
-        lpToken.safeApprove(address(migrator), bal);
-        IERC20 newLpToken = migrator.migrate(lpToken);
-        require(bal == newLpToken.balanceOf(address(this)), "migrate: bad");
-        pool.lpToken = newLpToken;
+        if (overwrite) { rewarder[_pid] = _rewarder; }
+        emit LogSetPool(_pid, _allocPoint, overwrite ? _rewarder : rewarder[_pid], overwrite);
     }
 
     // Return reward multiplier over the given _from to _to block.
     function getMultiplier(uint256 _from, uint256 _to)
         public
-        view
+        pure
         returns (uint256)
     {
-        if (_to <= bonusEndBlock) {
-            return _to.sub(_from).mul(BONUS_MULTIPLIER);
-        } else if (_from >= bonusEndBlock) {
-            return _to.sub(_from);
-        } else {
-            return
-                bonusEndBlock.sub(_from).mul(BONUS_MULTIPLIER).add(
-                    _to.sub(bonusEndBlock)
-                );
-        }
+        return _to.sub(_from);
     }
 
     // View function to see pending KDXs on frontend.
@@ -154,7 +157,7 @@ contract KaidexMasterChef is Ownable {
     {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        uint256 accKDXPerShare = pool.accKDXPerShare;
+        uint256 accKdxPerShare = pool.accKDXPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier =
@@ -163,11 +166,11 @@ contract KaidexMasterChef is Ownable {
                 multiplier.mul(kdxPerBlock).mul(pool.allocPoint).div(
                     totalAllocPoint
                 );
-            accKDXPerShare = accKDXPerShare.add(
+            accKdxPerShare = accKdxPerShare.add(
                 kdxReward.mul(1e12).div(lpSupply)
             );
         }
-        return user.amount.mul(accKDXPerShare).div(1e12).sub(user.rewardDebt);
+        return user.amount.mul(accKdxPerShare).div(1e12).sub(user.rewardDebt);
     }
 
     // Update reward vairables for all pools. Be careful of gas spending!
@@ -190,30 +193,54 @@ contract KaidexMasterChef is Ownable {
             return;
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 kdxReward = multiplier.mul(kdxPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-        kdx.mint(devaddr, kdxReward.div(10));
+        uint256 kdxReward =
+            multiplier.mul(kdxPerBlock).mul(pool.allocPoint).div(
+                totalAllocPoint
+            );
         kdx.mint(address(this), kdxReward);
-        pool.accKDXPerShare = pool.accKDXPerShare.add(kdxReward.mul(1e12).div(lpSupply));
+        pool.accKDXPerShare = pool.accKDXPerShare.add(
+            kdxReward.mul(1e12).div(lpSupply)
+        );
         pool.lastRewardBlock = block.number;
+        emit LogUpdatePool(_pid, pool.lastRewardBlock, lpSupply, pool.accKDXPerShare);
     }
 
-    // Deposit LP tokens to MasterChef for KDX allocation.
-    function deposit(uint256 _pid, uint256 _amount) public {
+    // Internal deposit function to deposit LP tokens to MasterChef for KDX allocation.
+    function _deposit(uint256 _pid, uint256 _amount, address userAddress) internal {
         PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
+        UserInfo storage user = userInfo[_pid][userAddress];
         updatePool(_pid);
+        uint256 pending = 0;
         if (user.amount > 0) {
-            uint256 pending = user.amount.mul(pool.accKDXPerShare).div(1e12).sub(user.rewardDebt);
-            safeKDXTransfer(msg.sender, pending);
-        }
+            pending =
+                user.amount.mul(pool.accKDXPerShare).div(1e12).sub(
+                    user.rewardDebt
+                );
+            safeKDXTransfer(userAddress, pending);
+        } 
         pool.lpToken.safeTransferFrom(
-            address(msg.sender),
+            address(userAddress),
             address(this),
             _amount
         );
         user.amount = user.amount.add(_amount);
         user.rewardDebt = user.amount.mul(pool.accKDXPerShare).div(1e12);
-        emit Deposit(msg.sender, _pid, _amount);
+        // Rewarder
+        IRewarder _rewarder = rewarder[_pid];
+        if (address(_rewarder) != address(0)) {
+            _rewarder.onKdxReward(_pid, userAddress, userAddress, pending, user.amount);
+        }
+        emit Deposit(userAddress, _pid, _amount);
+    }
+
+    // Deposit LP tokens to MasterChef for KDX allocation.
+    function deposit(uint256 _pid, uint256 _amount) public {
+        _deposit(_pid, _amount, msg.sender);
+    }
+
+    // Harvest KDX rewards from MasterChef pools.
+    function harvest(uint256 _pid) public returns (address) {
+        _deposit(_pid, 0, msg.sender);
     }
 
     // Withdraw LP tokens from MasterChef.
@@ -222,11 +249,19 @@ contract KaidexMasterChef is Ownable {
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 pending = user.amount.mul(pool.accKDXPerShare).div(1e12).sub(user.rewardDebt);
+        uint256 pending =
+            user.amount.mul(pool.accKDXPerShare).div(1e12).sub(
+                user.rewardDebt
+            );
         safeKDXTransfer(msg.sender, pending);
         user.amount = user.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accKDXPerShare).div(1e12);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
+        // Rewarder
+        IRewarder _rewarder = rewarder[_pid];
+        if (address(_rewarder) != address(0)) {
+            _rewarder.onKdxReward(_pid, msg.sender, msg.sender, pending, user.amount);
+        }
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
@@ -234,10 +269,15 @@ contract KaidexMasterChef is Ownable {
     function emergencyWithdraw(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
+
         pool.lpToken.safeTransfer(address(msg.sender), user.amount);
-        emit EmergencyWithdraw(msg.sender, _pid, user.amount);
         user.amount = 0;
         user.rewardDebt = 0;
+        emit EmergencyWithdraw(msg.sender, _pid, user.amount);
+        IRewarder _rewarder = rewarder[_pid];
+        if (address(_rewarder) != address(0)) {
+            _rewarder.onKdxReward(_pid, msg.sender, msg.sender, 0, 0);
+        }
     }
 
     // Safe kdx transfer function, just in case if rounding error causes pool to not have enough KDXs.
@@ -248,11 +288,5 @@ contract KaidexMasterChef is Ownable {
         } else {
             kdx.transfer(_to, _amount);
         }
-    }
-
-    // Update dev address by the previous dev.
-    function dev(address _devaddr) public {
-        require(msg.sender == devaddr, "dev: wut?");
-        devaddr = _devaddr;
     }
 }
