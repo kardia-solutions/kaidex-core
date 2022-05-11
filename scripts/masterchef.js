@@ -20,7 +20,7 @@ async function main() {
   // await hre.run('compile');
   // We get the contract to deploy
   const KaidexMasterChef = await hre.ethers.getContractFactory("KaidexMasterChef");
-  const kaidexMasterChef = await KaidexMasterChef.deploy(kdx_token, dev_address, kdx_per_block, start_block, 0);
+  const kaidexMasterChef = await KaidexMasterChef.deploy(kdx_token, kdx_per_block, start_block);
 
   await kaidexMasterChef.deployed();
 

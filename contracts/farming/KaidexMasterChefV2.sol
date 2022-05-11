@@ -2,28 +2,22 @@
 pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
-import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../libraries/BoringMath.sol";
 import "../libraries/SignedSafeMath.sol";
 import "../interfaces/IRewarder.sol";
 import "../interfaces/IMasterChef.sol";
-
-interface IMigratorChef {
-    // Take the current LP token address and return the new LP token address.
-    // Migrator should have full access to the caller's LP token.
-    function migrate(IERC20 token) external returns (IERC20);
-}
 
 /// @notice The (older) MasterChef contract gives out a constant number of KDX tokens per block.
 /// It is the only address with minting rights for KDX.
 /// The idea for this MasterChef V2 (MCV2) contract is therefore to be the owner of a dummy token
 /// that is deposited into the MasterChef V1 (MCV1) contract.
 /// The allocation point for this pool on MCV1 is the total allocation point for all pools that receive double incentives.
-contract KaidexMasterChefV2 is BoringOwnable, BoringBatchable {
+contract KaidexMasterChefV2 is Ownable {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
-    using BoringERC20 for IERC20;
+    using SafeERC20 for IERC20;
     using SignedSafeMath for int256;
 
     /// @notice Info of each MCV2 user.
@@ -49,8 +43,6 @@ contract KaidexMasterChefV2 is BoringOwnable, BoringBatchable {
     IERC20 public immutable KDX;
     /// @notice The index of MCV2 master pool in MCV1.
     uint256 public immutable MASTER_PID;
-    // @notice The migrator contract. It has a lot of power. Can only be set through governance (owner).
-    IMigratorChef public migrator;
 
     /// @notice Info of each MCV2 pool.
     PoolInfo[] public poolInfo;
@@ -60,26 +52,60 @@ contract KaidexMasterChefV2 is BoringOwnable, BoringBatchable {
     IRewarder[] public rewarder;
 
     /// @notice Info of each user that stakes LP tokens.
-    mapping (uint256 => mapping (address => UserInfo)) public userInfo;
+    mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     /// @dev Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint;
 
-    uint256 private constant MASTERCHEF_KDX_PER_BLOCK = 1e20;
+    // uint256 private constant MASTERCHEF_KDX_PER_BLOCK = 1e20;
     uint256 private constant ACC_KDX_PRECISION = 1e12;
 
-    event Deposit(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);
-    event Withdraw(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);
-    event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount, address indexed to);
+    event Deposit(
+        address indexed user,
+        uint256 indexed pid,
+        uint256 amount,
+        address indexed to
+    );
+    event Withdraw(
+        address indexed user,
+        uint256 indexed pid,
+        uint256 amount,
+        address indexed to
+    );
+    event EmergencyWithdraw(
+        address indexed user,
+        uint256 indexed pid,
+        uint256 amount,
+        address indexed to
+    );
     event Harvest(address indexed user, uint256 indexed pid, uint256 amount);
-    event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
-    event LogSetPool(uint256 indexed pid, uint256 allocPoint, IRewarder indexed rewarder, bool overwrite);
-    event LogUpdatePool(uint256 indexed pid, uint64 lastRewardBlock, uint256 lpSupply, uint256 accKdxPerShare);
+    event LogPoolAddition(
+        uint256 indexed pid,
+        uint256 allocPoint,
+        IERC20 indexed lpToken,
+        IRewarder indexed rewarder
+    );
+    event LogSetPool(
+        uint256 indexed pid,
+        uint256 allocPoint,
+        IRewarder indexed rewarder,
+        bool overwrite
+    );
+    event LogUpdatePool(
+        uint256 indexed pid,
+        uint64 lastRewardBlock,
+        uint256 lpSupply,
+        uint256 accKdxPerShare
+    );
     event LogInit();
 
     /// @param _MASTER_CHEF The Kaidex MCV1 contract address.
     /// @param _kdx The KDX token contract address.
     /// @param _MASTER_PID The pool ID of the dummy token on the base MCV1 contract.
-    constructor(IMasterChef _MASTER_CHEF, IERC20 _kdx, uint256 _MASTER_PID) public {
+    constructor(
+        IMasterChef _MASTER_CHEF,
+        IERC20 _kdx,
+        uint256 _MASTER_PID
+    ) public {
         MASTER_CHEF = _MASTER_CHEF;
         KDX = _kdx;
         MASTER_PID = _MASTER_PID;
@@ -108,18 +134,29 @@ contract KaidexMasterChefV2 is BoringOwnable, BoringBatchable {
     /// @param allocPoint AP of the new pool.
     /// @param _lpToken Address of the LP ERC-20 token.
     /// @param _rewarder Address of the rewarder delegate.
-    function add(uint256 allocPoint, IERC20 _lpToken, IRewarder _rewarder) public onlyOwner {
+    function add(
+        uint256 allocPoint,
+        IERC20 _lpToken,
+        IRewarder _rewarder
+    ) public onlyOwner {
         uint256 lastRewardBlock = block.number;
         totalAllocPoint = totalAllocPoint.add(allocPoint);
         lpToken.push(_lpToken);
         rewarder.push(_rewarder);
 
-        poolInfo.push(PoolInfo({
-            allocPoint: allocPoint.to64(),
-            lastRewardBlock: lastRewardBlock.to64(),
-            accKdxPerShare: 0
-        }));
-        emit LogPoolAddition(lpToken.length.sub(1), allocPoint, _lpToken, _rewarder);
+        poolInfo.push(
+            PoolInfo({
+                allocPoint: allocPoint.to64(),
+                lastRewardBlock: lastRewardBlock.to64(),
+                accKdxPerShare: 0
+            })
+        );
+        emit LogPoolAddition(
+            lpToken.length.sub(1),
+            allocPoint,
+            _lpToken,
+            _rewarder
+        );
     }
 
     /// @notice Update the given pool's KDX allocation point and `IRewarder` contract. Can only be called by the owner.
@@ -127,37 +164,30 @@ contract KaidexMasterChefV2 is BoringOwnable, BoringBatchable {
     /// @param _allocPoint New AP of the pool.
     /// @param _rewarder Address of the rewarder delegate.
     /// @param overwrite True if _rewarder should be `set`. Otherwise `_rewarder` is ignored.
-    function set(uint256 _pid, uint256 _allocPoint, IRewarder _rewarder, bool overwrite) public onlyOwner {
+    function set(
+        uint256 _pid,
+        uint256 _allocPoint,
+        IRewarder _rewarder,
+        bool overwrite
+    ) public onlyOwner {
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
         poolInfo[_pid].allocPoint = _allocPoint.to64();
-        if (overwrite) { rewarder[_pid] = _rewarder; }
+        if (overwrite) {
+            rewarder[_pid] = _rewarder;
+        }
         emit LogSetPool(_pid, _allocPoint, overwrite ? _rewarder : rewarder[_pid], overwrite);
-    }
-
-    /// @notice Set the `migrator` contract. Can only be called by the owner.
-    /// @param _migrator The contract address to set.
-    function setMigrator(IMigratorChef _migrator) public onlyOwner {
-        migrator = _migrator;
-    }
-
-    /// @notice Migrate LP token to another LP contract through the `migrator` contract.
-    /// @param _pid The index of the pool. See `poolInfo`.
-    function migrate(uint256 _pid) public {
-        require(address(migrator) != address(0), "MasterChefV2: no migrator set");
-        IERC20 _lpToken = lpToken[_pid];
-        uint256 bal = _lpToken.balanceOf(address(this));
-        _lpToken.approve(address(migrator), bal);
-        IERC20 newLpToken = migrator.migrate(_lpToken);
-        require(bal == newLpToken.balanceOf(address(this)), "MasterChefV2: migrated balance must match");
-        lpToken[_pid] = newLpToken;
     }
 
     /// @notice View function to see pending KDX on frontend.
     /// @param _pid The index of the pool. See `poolInfo`.
     /// @param _user Address of user.
     /// @return pending KDX reward for a given user.
-    function pendingKDX(uint256 _pid, address _user) external view returns (uint256 pending) {
-        PoolInfo memory pool = poolInfo[_pid];
+    function pendingKDX(uint256 _pid, address _user)
+        external
+        view
+        returns (uint256 pending)
+    {
+       PoolInfo memory pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accKdxPerShare = pool.accKdxPerShare;
         uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
@@ -180,8 +210,9 @@ contract KaidexMasterChefV2 is BoringOwnable, BoringBatchable {
 
     /// @notice Calculates and returns the `amount` of KDX per block.
     function kdxPerBlock() public view returns (uint256 amount) {
-        amount = uint256(MASTERCHEF_KDX_PER_BLOCK)
-            .mul(MASTER_CHEF.poolInfo(MASTER_PID).allocPoint) / MASTER_CHEF.totalAllocPoint();
+        amount =
+            uint256(MASTER_CHEF.kdxPerBlock()).mul(MASTER_CHEF.poolInfo(MASTER_PID).allocPoint) /
+            MASTER_CHEF.totalAllocPoint();
     }
 
     /// @notice Update reward variables of the given pool.
@@ -206,7 +237,12 @@ contract KaidexMasterChefV2 is BoringOwnable, BoringBatchable {
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param amount LP token amount to deposit.
     /// @param to The receiver of `amount` deposit benefit.
-    function deposit(uint256 pid, uint256 amount, address to) public {
+    function deposit(
+        uint256 pid,
+        uint256 amount,
+        address to
+    ) public {
+        harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][to];
 
@@ -229,7 +265,12 @@ contract KaidexMasterChefV2 is BoringOwnable, BoringBatchable {
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param amount LP token amount to withdraw.
     /// @param to Receiver of the LP tokens.
-    function withdraw(uint256 pid, uint256 amount, address to) public {
+    function withdraw(
+        uint256 pid,
+        uint256 amount,
+        address to
+    ) public {
+        harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
 
@@ -242,7 +283,7 @@ contract KaidexMasterChefV2 is BoringOwnable, BoringBatchable {
         if (address(_rewarder) != address(0)) {
             _rewarder.onKdxReward(pid, msg.sender, to, 0, user.amount);
         }
-        
+
         lpToken[pid].safeTransfer(to, amount);
 
         emit Withdraw(msg.sender, pid, amount, to);
@@ -252,53 +293,59 @@ contract KaidexMasterChefV2 is BoringOwnable, BoringBatchable {
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param to Receiver of KDX rewards.
     function harvest(uint256 pid, address to) public {
+        harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
         int256 accumulatedKdx = int256(user.amount.mul(pool.accKdxPerShare) / ACC_KDX_PRECISION);
-        uint256 _pendingKDX = accumulatedKdx.sub(user.rewardDebt).toUInt256();
+        uint256 _pendingKdx = accumulatedKdx.sub(user.rewardDebt).toUInt256();
 
         // Effects
         user.rewardDebt = accumulatedKdx;
 
         // Interactions
-        if (_pendingKDX != 0) {
-            KDX.safeTransfer(to, _pendingKDX);
-        }
-        
-        IRewarder _rewarder = rewarder[pid];
-        if (address(_rewarder) != address(0)) {
-            _rewarder.onKdxReward( pid, msg.sender, to, _pendingKDX, user.amount);
+        if (_pendingKdx != 0) {
+            KDX.safeTransfer(to, _pendingKdx);
         }
 
-        emit Harvest(msg.sender, pid, _pendingKDX);
+        IRewarder _rewarder = rewarder[pid];
+        if (address(_rewarder) != address(0)) {
+            _rewarder.onKdxReward(pid, msg.sender, to, _pendingKdx, user.amount);
+        }
+
+        emit Harvest(msg.sender, pid, _pendingKdx);
     }
-    
+
     /// @notice Withdraw LP tokens from MCV2 and harvest proceeds for transaction sender to `to`.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param amount LP token amount to withdraw.
     /// @param to Receiver of the LP tokens and KDX rewards.
-    function withdrawAndHarvest(uint256 pid, uint256 amount, address to) public {
+    function withdrawAndHarvest(
+        uint256 pid,
+        uint256 amount,
+        address to
+    ) public {
+        harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
         int256 accumulatedKdx = int256(user.amount.mul(pool.accKdxPerShare) / ACC_KDX_PRECISION);
-        uint256 _pendingKDX = accumulatedKdx.sub(user.rewardDebt).toUInt256();
+        uint256 _pendingKdx = accumulatedKdx.sub(user.rewardDebt).toUInt256();
 
         // Effects
         user.rewardDebt = accumulatedKdx.sub(int256(amount.mul(pool.accKdxPerShare) / ACC_KDX_PRECISION));
         user.amount = user.amount.sub(amount);
-        
+
         // Interactions
-        KDX.safeTransfer(to, _pendingKDX);
+        KDX.safeTransfer(to, _pendingKdx);
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
-            _rewarder.onKdxReward(pid, msg.sender, to, _pendingKDX, user.amount);
+            _rewarder.onKdxReward(pid, msg.sender, to, _pendingKdx, user.amount);
         }
 
         lpToken[pid].safeTransfer(to, amount);
 
         emit Withdraw(msg.sender, pid, amount, to);
-        emit Harvest(msg.sender, pid, _pendingKDX);
+        emit Harvest(msg.sender, pid, _pendingKdx);
     }
 
     /// @notice Harvests KDX from `MASTER_CHEF` MCV1 and pool `MASTER_PID` to this MCV2 contract.

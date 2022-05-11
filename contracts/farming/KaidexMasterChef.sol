@@ -10,13 +10,16 @@ import "../KaidexToken.sol";
 import "../interfaces/IRewarder.sol";
 
 contract KaidexMasterChef is Ownable {
+
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
+
     // Info of each user.
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
         uint256 rewardDebt; // Reward debt. See explanation below.
     }
+
     // Info of each pool.
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
@@ -24,17 +27,16 @@ contract KaidexMasterChef is Ownable {
         uint256 lastRewardBlock; // Last block number that KDXs distribution occurs.
         uint256 accKDXPerShare; // Accumulated KDXs per share, times 1e12. See below.
     }
+
     // The KDX TOKEN
     KaiDexToken public kdx;
     
     // KDX tokens created per block.
-    uint256 public kdxPerBlock; 
-    
-    // The migrator contract. It has a lot of power. Can only be set through governance (owner).
-    // IMigratorChef public migrator;
+    uint256 public kdxPerBlock;
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
+
     // Info of each user that stakes LP tokens.
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     
@@ -55,7 +57,6 @@ contract KaidexMasterChef is Ownable {
         uint256 indexed pid,
         uint256 amount
     );
-
     event LogPoolAddition(
         uint256 indexed pid, 
         uint256 allocPoint, 

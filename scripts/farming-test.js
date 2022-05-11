@@ -21,12 +21,12 @@ async function main() {
   
   // Deploy masterchef v1
   const KaidexMasterChef = await hre.ethers.getContractFactory("KaidexMasterChef");
-  const kaidexMasterChef = await KaidexMasterChef.deploy(kaiDexToken.address, dev_address, kdx_per_block, start_block, 0);
+  const kaidexMasterChef = await KaidexMasterChef.deploy(kaiDexToken.address, kdx_per_block, start_block);
   await kaidexMasterChef.deployed();
   console.log("************ KAIDEX Masterchef deployed to:", kaidexMasterChef.address);
 
   // Create the first pool
-  const first_pool = await kaidexMasterChef.add("10000000000000000000", lp_mock_token, true)
+  const first_pool = await kaidexMasterChef.add(1000, lp_mock_token, "0x0000000000000000000000000000000000000000", true)
   console.log("first_pool", first_pool.hash)
 
   // Transfer ownership
