@@ -73,7 +73,7 @@ contract KaidexMasterChef is Ownable {
         uint256 indexed pid, 
         uint256 lastRewardBlock, 
         uint256 lpSupply, 
-        uint256 accSushiPerShare
+        uint256 accKdxPerShare
     );
 
     constructor(
