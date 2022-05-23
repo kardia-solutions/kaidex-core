@@ -23,15 +23,16 @@ library KaiDexLibrary {
     ) internal pure returns (address pair) {
         (address token0, address token1) = sortTokens(tokenA, tokenB);
         pair = address(
-            uint256(
+            uint160(uint256(
                 keccak256(
                     abi.encodePacked(
                         hex"ff",
                         factory,
                         keccak256(abi.encodePacked(token0, token1)),
-                        hex"a5934690703a592a07e841ca29d5e5c79b5e22ed4749057bb216dc31100be1c0" // init code hash
+                        hex"e211f96cb3bd031b6a72fd2d205e0a0427ac351e9ad2a8cb32549bf1bfd84980" // init code hash
                     )
                 )
+            )
             )
         );
     }

@@ -42,18 +42,36 @@ contract KaiDexRouter is IKaiDexRouter {
         if (IKaiDexFactory(factory).getPair(tokenA, tokenB) == address(0)) {
             IKaiDexFactory(factory).createPair(tokenA, tokenB);
         }
-        (uint256 reserveA, uint256 reserveB) = KaiDexLibrary.getReserves(factory, tokenA, tokenB);
+        (uint256 reserveA, uint256 reserveB) = KaiDexLibrary.getReserves(
+            factory,
+            tokenA,
+            tokenB
+        );
         if (reserveA == 0 && reserveB == 0) {
             (amountA, amountB) = (amountADesired, amountBDesired);
         } else {
-            uint256 amountBOptimal = KaiDexLibrary.quote(amountADesired, reserveA, reserveB);
+            uint256 amountBOptimal = KaiDexLibrary.quote(
+                amountADesired,
+                reserveA,
+                reserveB
+            );
             if (amountBOptimal <= amountBDesired) {
-                require(amountBOptimal >= amountBMin, "KaiDexRouter: INSUFFICIENT_B_AMOUNT");
+                require(
+                    amountBOptimal >= amountBMin,
+                    "KaiDexRouter: INSUFFICIENT_B_AMOUNT"
+                );
                 (amountA, amountB) = (amountADesired, amountBOptimal);
             } else {
-                uint256 amountAOptimal = KaiDexLibrary.quote(amountBDesired, reserveB, reserveA);
+                uint256 amountAOptimal = KaiDexLibrary.quote(
+                    amountBDesired,
+                    reserveB,
+                    reserveA
+                );
                 assert(amountAOptimal <= amountADesired);
-                require(amountAOptimal >= amountAMin, "KaiDexRouter: INSUFFICIENT_A_AMOUNT");
+                require(
+                    amountAOptimal >= amountAMin,
+                    "KaiDexRouter: INSUFFICIENT_A_AMOUNT"
+                );
                 (amountA, amountB) = (amountAOptimal, amountBDesired);
             }
         }
@@ -79,7 +97,14 @@ contract KaiDexRouter is IKaiDexRouter {
             uint256 liquidity
         )
     {
-        (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin);
+        (amountA, amountB) = _addLiquidity(
+            tokenA,
+            tokenB,
+            amountADesired,
+            amountBDesired,
+            amountAMin,
+            amountBMin
+        );
         address pair = KaiDexLibrary.pairFor(factory, tokenA, tokenB);
         TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amountA);
         TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);
@@ -119,7 +144,8 @@ contract KaiDexRouter is IKaiDexRouter {
         assert(IWKAI(WKAI).transfer(pair, amountETH));
         liquidity = IKAIDexPair(pair).mint(to);
         // refund dust eth, if any
-        if (msg.value > amountETH) TransferHelper.safeTransferKAI(msg.sender, msg.value - amountETH);
+        if (msg.value > amountETH)
+            TransferHelper.safeTransferKAI(msg.sender, msg.value - amountETH);
     }
 
     // **** REMOVE LIQUIDITY ****
@@ -131,12 +157,20 @@ contract KaiDexRouter is IKaiDexRouter {
         uint256 amountBMin,
         address to,
         uint256 deadline
-    ) public virtual override ensure(deadline) returns (uint256 amountA, uint256 amountB) {
+    )
+        public
+        virtual
+        override
+        ensure(deadline)
+        returns (uint256 amountA, uint256 amountB)
+    {
         address pair = KaiDexLibrary.pairFor(factory, tokenA, tokenB);
         IKAIDexPair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
         (uint256 amount0, uint256 amount1) = IKAIDexPair(pair).burn(to);
         (address token0, ) = KaiDexLibrary.sortTokens(tokenA, tokenB);
-        (amountA, amountB) = tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
+        (amountA, amountB) = tokenA == token0
+            ? (amount0, amount1)
+            : (amount1, amount0);
         require(amountA >= amountAMin, "KaiDexRouter: INSUFFICIENT_A_AMOUNT");
         require(amountB >= amountBMin, "KaiDexRouter: INSUFFICIENT_B_AMOUNT");
     }
@@ -148,7 +182,13 @@ contract KaiDexRouter is IKaiDexRouter {
         uint256 amountETHMin,
         address to,
         uint256 deadline
-    ) public virtual override ensure(deadline) returns (uint256 amountToken, uint256 amountETH) {
+    )
+        public
+        virtual
+        override
+        ensure(deadline)
+        returns (uint256 amountToken, uint256 amountETH)
+    {
         (amountToken, amountETH) = removeLiquidity(
             token,
             WKAI,
@@ -178,8 +218,24 @@ contract KaiDexRouter is IKaiDexRouter {
     ) external virtual override returns (uint256 amountA, uint256 amountB) {
         address pair = KaiDexLibrary.pairFor(factory, tokenA, tokenB);
         uint256 value = approveMax ? type(uint256).max : liquidity;
-        IKAIDexPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-        (amountA, amountB) = removeLiquidity(tokenA, tokenB, liquidity, amountAMin, amountBMin, to, deadline);
+        IKAIDexPair(pair).permit(
+            msg.sender,
+            address(this),
+            value,
+            deadline,
+            v,
+            r,
+            s
+        );
+        (amountA, amountB) = removeLiquidity(
+            tokenA,
+            tokenB,
+            liquidity,
+            amountAMin,
+            amountBMin,
+            to,
+            deadline
+        );
     }
 
     function removeLiquidityKAIWithPermit(
@@ -193,11 +249,31 @@ contract KaiDexRouter is IKaiDexRouter {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external virtual override returns (uint256 amountToken, uint256 amountETH) {
+    )
+        external
+        virtual
+        override
+        returns (uint256 amountToken, uint256 amountETH)
+    {
         address pair = KaiDexLibrary.pairFor(factory, token, WKAI);
         uint256 value = approveMax ? type(uint256).max : liquidity;
-        IKAIDexPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
-        (amountToken, amountETH) = removeLiquidityKAI(token, liquidity, amountTokenMin, amountETHMin, to, deadline);
+        IKAIDexPair(pair).permit(
+            msg.sender,
+            address(this),
+            value,
+            deadline,
+            v,
+            r,
+            s
+        );
+        (amountToken, amountETH) = removeLiquidityKAI(
+            token,
+            liquidity,
+            amountTokenMin,
+            amountETHMin,
+            to,
+            deadline
+        );
     }
 
     // **** REMOVE LIQUIDITY (supporting fee-on-transfer tokens) ****
@@ -209,8 +285,20 @@ contract KaiDexRouter is IKaiDexRouter {
         address to,
         uint256 deadline
     ) public virtual override ensure(deadline) returns (uint256 amountETH) {
-        (, amountETH) = removeLiquidity(token, WKAI, liquidity, amountTokenMin, amountETHMin, address(this), deadline);
-        TransferHelper.safeTransfer(token, to, IKRC20(token).balanceOf(address(this)));
+        (, amountETH) = removeLiquidity(
+            token,
+            WKAI,
+            liquidity,
+            amountTokenMin,
+            amountETHMin,
+            address(this),
+            deadline
+        );
+        TransferHelper.safeTransfer(
+            token,
+            to,
+            IKRC20(token).balanceOf(address(this))
+        );
         IWKAI(WKAI).withdraw(amountETH);
         TransferHelper.safeTransferKAI(to, amountETH);
     }
@@ -229,7 +317,15 @@ contract KaiDexRouter is IKaiDexRouter {
     ) external virtual override returns (uint256 amountETH) {
         address pair = KaiDexLibrary.pairFor(factory, token, WKAI);
         uint256 value = approveMax ? type(uint256).max : liquidity;
-        IKAIDexPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
+        IKAIDexPair(pair).permit(
+            msg.sender,
+            address(this),
+            value,
+            deadline,
+            v,
+            r,
+            s
+        );
         amountETH = removeLiquidityKAISupportingFeeOnTransferTokens(
             token,
             liquidity,
@@ -251,10 +347,18 @@ contract KaiDexRouter is IKaiDexRouter {
             (address input, address output) = (path[i], path[i + 1]);
             (address token0, ) = KaiDexLibrary.sortTokens(input, output);
             uint256 amountOut = amounts[i + 1];
-            (uint256 amount0Out, uint256 amount1Out) =
-                input == token0 ? (uint256(0), amountOut) : (amountOut, uint256(0));
-            address to = i < path.length - 2 ? KaiDexLibrary.pairFor(factory, output, path[i + 2]) : _to;
-            IKAIDexPair(KaiDexLibrary.pairFor(factory, input, output)).swap(amount0Out, amount1Out, to, new bytes(0));
+            (uint256 amount0Out, uint256 amount1Out) = input == token0
+                ? (uint256(0), amountOut)
+                : (amountOut, uint256(0));
+            address to = i < path.length - 2
+                ? KaiDexLibrary.pairFor(factory, output, path[i + 2])
+                : _to;
+            IKAIDexPair(KaiDexLibrary.pairFor(factory, input, output)).swap(
+                amount0Out,
+                amount1Out,
+                to,
+                new bytes(0)
+            );
         }
     }
 
@@ -264,9 +368,18 @@ contract KaiDexRouter is IKaiDexRouter {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external virtual override ensure(deadline) returns (uint256[] memory amounts) {
+    )
+        external
+        virtual
+        override
+        ensure(deadline)
+        returns (uint256[] memory amounts)
+    {
         amounts = KaiDexLibrary.getAmountsOut(factory, amountIn, path);
-        require(amounts[amounts.length - 1] >= amountOutMin, "KaiDexRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+        require(
+            amounts[amounts.length - 1] >= amountOutMin,
+            "KaiDexRouter: INSUFFICIENT_OUTPUT_AMOUNT"
+        );
         TransferHelper.safeTransferFrom(
             path[0],
             msg.sender,
@@ -282,9 +395,18 @@ contract KaiDexRouter is IKaiDexRouter {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external virtual override ensure(deadline) returns (uint256[] memory amounts) {
+    )
+        external
+        virtual
+        override
+        ensure(deadline)
+        returns (uint256[] memory amounts)
+    {
         amounts = KaiDexLibrary.getAmountsIn(factory, amountOut, path);
-        require(amounts[0] <= amountInMax, "KaiDexRouter: EXCESSIVE_INPUT_AMOUNT");
+        require(
+            amounts[0] <= amountInMax,
+            "KaiDexRouter: EXCESSIVE_INPUT_AMOUNT"
+        );
         TransferHelper.safeTransferFrom(
             path[0],
             msg.sender,
@@ -299,12 +421,27 @@ contract KaiDexRouter is IKaiDexRouter {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external payable virtual override ensure(deadline) returns (uint256[] memory amounts) {
+    )
+        external
+        payable
+        virtual
+        override
+        ensure(deadline)
+        returns (uint256[] memory amounts)
+    {
         require(path[0] == WKAI, "KaiDexRouter: INVALID_PATH");
         amounts = KaiDexLibrary.getAmountsOut(factory, msg.value, path);
-        require(amounts[amounts.length - 1] >= amountOutMin, "KaiDexRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+        require(
+            amounts[amounts.length - 1] >= amountOutMin,
+            "KaiDexRouter: INSUFFICIENT_OUTPUT_AMOUNT"
+        );
         IWKAI(WKAI).deposit{value: amounts[0]}();
-        assert(IWKAI(WKAI).transfer(KaiDexLibrary.pairFor(factory, path[0], path[1]), amounts[0]));
+        assert(
+            IWKAI(WKAI).transfer(
+                KaiDexLibrary.pairFor(factory, path[0], path[1]),
+                amounts[0]
+            )
+        );
         _swap(amounts, path, to);
     }
 
@@ -314,10 +451,19 @@ contract KaiDexRouter is IKaiDexRouter {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external virtual override ensure(deadline) returns (uint256[] memory amounts) {
+    )
+        external
+        virtual
+        override
+        ensure(deadline)
+        returns (uint256[] memory amounts)
+    {
         require(path[path.length - 1] == WKAI, "KaiDexRouter: INVALID_PATH");
         amounts = KaiDexLibrary.getAmountsIn(factory, amountOut, path);
-        require(amounts[0] <= amountInMax, "KaiDexRouter: EXCESSIVE_INPUT_AMOUNT");
+        require(
+            amounts[0] <= amountInMax,
+            "KaiDexRouter: EXCESSIVE_INPUT_AMOUNT"
+        );
         TransferHelper.safeTransferFrom(
             path[0],
             msg.sender,
@@ -335,10 +481,19 @@ contract KaiDexRouter is IKaiDexRouter {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external virtual override ensure(deadline) returns (uint256[] memory amounts) {
+    )
+        external
+        virtual
+        override
+        ensure(deadline)
+        returns (uint256[] memory amounts)
+    {
         require(path[path.length - 1] == WKAI, "KaiDexRouter: INVALID_PATH");
         amounts = KaiDexLibrary.getAmountsOut(factory, amountIn, path);
-        require(amounts[amounts.length - 1] >= amountOutMin, "KaiDexRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+        require(
+            amounts[amounts.length - 1] >= amountOutMin,
+            "KaiDexRouter: INSUFFICIENT_OUTPUT_AMOUNT"
+        );
         TransferHelper.safeTransferFrom(
             path[0],
             msg.sender,
@@ -355,37 +510,68 @@ contract KaiDexRouter is IKaiDexRouter {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external payable virtual override ensure(deadline) returns (uint256[] memory amounts) {
+    )
+        external
+        payable
+        virtual
+        override
+        ensure(deadline)
+        returns (uint256[] memory amounts)
+    {
         require(path[0] == WKAI, "KaiDexRouter: INVALID_PATH");
         amounts = KaiDexLibrary.getAmountsIn(factory, amountOut, path);
-        require(amounts[0] <= msg.value, "KaiDexRouter: EXCESSIVE_INPUT_AMOUNT");
+        require(
+            amounts[0] <= msg.value,
+            "KaiDexRouter: EXCESSIVE_INPUT_AMOUNT"
+        );
         IWKAI(WKAI).deposit{value: amounts[0]}();
-        assert(IWKAI(WKAI).transfer(KaiDexLibrary.pairFor(factory, path[0], path[1]), amounts[0]));
+        assert(
+            IWKAI(WKAI).transfer(
+                KaiDexLibrary.pairFor(factory, path[0], path[1]),
+                amounts[0]
+            )
+        );
         _swap(amounts, path, to);
         // refund dust eth, if any
-        if (msg.value > amounts[0]) TransferHelper.safeTransferKAI(msg.sender, msg.value - amounts[0]);
+        if (msg.value > amounts[0])
+            TransferHelper.safeTransferKAI(msg.sender, msg.value - amounts[0]);
     }
 
     // **** SWAP (supporting fee-on-transfer tokens) ****
     // requires the initial amount to have already been sent to the first pair
-    function _swapSupportingFeeOnTransferTokens(address[] memory path, address _to) internal virtual {
+    function _swapSupportingFeeOnTransferTokens(
+        address[] memory path,
+        address _to
+    ) internal virtual {
         for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
             (address token0, ) = KaiDexLibrary.sortTokens(input, output);
-            IKAIDexPair pair = IKAIDexPair(KaiDexLibrary.pairFor(factory, input, output));
+            IKAIDexPair pair = IKAIDexPair(
+                KaiDexLibrary.pairFor(factory, input, output)
+            );
             uint256 amountInput;
             uint256 amountOutput;
             {
                 // scope to avoid stack too deep errors
                 (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
-                (uint256 reserveInput, uint256 reserveOutput) =
-                    input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
-                amountInput = IKRC20(input).balanceOf(address(pair)).sub(reserveInput);
-                amountOutput = KaiDexLibrary.getAmountOut(amountInput, reserveInput, reserveOutput);
+                (uint256 reserveInput, uint256 reserveOutput) = input == token0
+                    ? (reserve0, reserve1)
+                    : (reserve1, reserve0);
+                amountInput = IKRC20(input).balanceOf(address(pair)).sub(
+                    reserveInput
+                );
+                amountOutput = KaiDexLibrary.getAmountOut(
+                    amountInput,
+                    reserveInput,
+                    reserveOutput
+                );
             }
-            (uint256 amount0Out, uint256 amount1Out) =
-                input == token0 ? (uint256(0), amountOutput) : (amountOutput, uint256(0));
-            address to = i < path.length - 2 ? KaiDexLibrary.pairFor(factory, output, path[i + 2]) : _to;
+            (uint256 amount0Out, uint256 amount1Out) = input == token0
+                ? (uint256(0), amountOutput)
+                : (amountOutput, uint256(0));
+            address to = i < path.length - 2
+                ? KaiDexLibrary.pairFor(factory, output, path[i + 2])
+                : _to;
             pair.swap(amount0Out, amount1Out, to, new bytes(0));
         }
     }
@@ -406,7 +592,8 @@ contract KaiDexRouter is IKaiDexRouter {
         uint256 balanceBefore = IKRC20(path[path.length - 1]).balanceOf(to);
         _swapSupportingFeeOnTransferTokens(path, to);
         require(
-            IKRC20(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >= amountOutMin,
+            IKRC20(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >=
+                amountOutMin,
             "KaiDexRouter: INSUFFICIENT_OUTPUT_AMOUNT"
         );
     }
@@ -420,11 +607,17 @@ contract KaiDexRouter is IKaiDexRouter {
         require(path[0] == WKAI, "KaiDexRouter: INVALID_PATH");
         uint256 amountIn = msg.value;
         IWKAI(WKAI).deposit{value: amountIn}();
-        assert(IWKAI(WKAI).transfer(KaiDexLibrary.pairFor(factory, path[0], path[1]), amountIn));
+        assert(
+            IWKAI(WKAI).transfer(
+                KaiDexLibrary.pairFor(factory, path[0], path[1]),
+                amountIn
+            )
+        );
         uint256 balanceBefore = IKRC20(path[path.length - 1]).balanceOf(to);
         _swapSupportingFeeOnTransferTokens(path, to);
         require(
-            IKRC20(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >= amountOutMin,
+            IKRC20(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >=
+                amountOutMin,
             "KaiDexRouter: INSUFFICIENT_OUTPUT_AMOUNT"
         );
     }
@@ -445,7 +638,10 @@ contract KaiDexRouter is IKaiDexRouter {
         );
         _swapSupportingFeeOnTransferTokens(path, address(this));
         uint256 amountOut = IKRC20(WKAI).balanceOf(address(this));
-        require(amountOut >= amountOutMin, "KaiDexRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+        require(
+            amountOut >= amountOutMin,
+            "KaiDexRouter: INSUFFICIENT_OUTPUT_AMOUNT"
+        );
         IWKAI(WKAI).withdraw(amountOut);
         TransferHelper.safeTransferKAI(to, amountOut);
     }

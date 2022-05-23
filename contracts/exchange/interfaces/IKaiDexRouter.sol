@@ -69,8 +69,6 @@ interface IKaiDexRouter {
         payable
         returns (uint[] memory amounts);
         
-    function swapWithLimitOrder(uint256[] calldata amounts,address[] calldata path, address to) external;
-
     function removeLiquidityWithPermit(
         address tokenA,
         address tokenB,

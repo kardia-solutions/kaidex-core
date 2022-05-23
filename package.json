@@ -16,6 +16,7 @@
     "deploy-farming-test": "npx hardhat run --network kai scripts/farming-test.js",
     "deploy-mock-lp": "npx hardhat run --network kai scripts/mock-token.js",
     "deploy-masterchef": "npx hardhat run --network kai scripts/masterchef.js",
+    "deploy-exchange": "npx hardhat run --network kai scripts/exchange.js",
     "test-masterchef": "npx hardhat test test/masterchef-test.js",
     "test-masterchefv2": "npx hardhat test test/masterchefv2-test.js",
     "test-stKdx": "npx hardhat test test/stKDX-test.js"

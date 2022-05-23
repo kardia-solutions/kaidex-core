@@ -8,7 +8,7 @@ const hre = require("hardhat");
 const dev_address="0x5D94B6dA25A95067e0647bc8F6597823ea09162e";
 const kdx_per_block="100000000000000000000";
 const start_block=7957800;
-const lp_mock_token="0x9F19540d920E64a4E5aA8E27A7cB9E8Ed6be473D"
+const lp_mock_token="0x9ac99717729bc2e71a3cc1e5c29d67af1dc0c772"
 
 
 async function main() {

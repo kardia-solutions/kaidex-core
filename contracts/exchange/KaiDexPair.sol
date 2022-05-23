@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import './interfaces/IKAIDexPair.sol';
 import './KAIDexKRC20.sol';
 import './libraries/Math.sol';
 import './libraries/UQ112x112.sol';
@@ -9,7 +8,7 @@ import './interfaces/IKRC20.sol';
 import './interfaces/IKaiDexFactory.sol';
 import './interfaces/IKAIDexCallee.sol';
 
-contract KaiDexPair is IKAIDexPair, KAIDexKRC20 {
+contract KaiDexPair is KAIDexKRC20 {
     using SafeMath  for uint;
     using UQ112x112 for uint224;
 
@@ -46,6 +45,18 @@ contract KaiDexPair is IKAIDexPair, KAIDexKRC20 {
         (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))), 'KAIDEX: TRANSFER_FAILED');
     }
+
+    event Sync(uint112 reserve0, uint112 reserve1);
+    event Mint(address indexed sender, uint256 amount0, uint256 amount1);
+    event Burn(address indexed sender, uint256 amount0, uint256 amount1, address indexed to);
+    event Swap(
+        address indexed sender,
+        uint256 amount0In,
+        uint256 amount1In,
+        uint256 amount0Out,
+        uint256 amount1Out,
+        address indexed to
+    );
 
     constructor() public {
         factory = msg.sender;
