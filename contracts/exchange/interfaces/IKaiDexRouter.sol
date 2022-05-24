@@ -2,9 +2,6 @@
 pragma solidity ^0.8.0;
 
 interface IKaiDexRouter {
-    // function factory() external pure returns (address);
-    // function WKAI() external pure returns (address);
-
     function addLiquidity(
         address tokenA,
         address tokenB,
@@ -87,21 +84,21 @@ interface IKaiDexRouter {
         address token,
         uint256 liquidity,
         uint256 amountTokenMin,
-        uint256 amountETHMin,
+        uint256 amountKAIMin,
         address to,
         uint256 deadline,
         bool approveMax,
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external returns (uint256 amountToken, uint256 amountETH);
+    ) external returns (uint256 amountToken, uint256 amountKAI);
     
     
     function removeLiquidityKAISupportingFeeOnTransferTokens(
         address token,
         uint liquidity,
         uint amountTokenMin,
-        uint amountETHMin,
+        uint amountKAIMin,
         address to,
         uint deadline
     ) external returns (uint amountKAI);
@@ -110,14 +107,14 @@ interface IKaiDexRouter {
         address token,
         uint256 liquidity,
         uint256 amountTokenMin,
-        uint256 amountETHMin,
+        uint256 amountKAIMin,
         address to,
         uint256 deadline,
         bool approveMax,
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external returns (uint256 amountETH);
+    ) external returns (uint256 amountKAI);
   
     function swapExactTokensForTokensSupportingFeeOnTransferTokens(
         uint amountIn,

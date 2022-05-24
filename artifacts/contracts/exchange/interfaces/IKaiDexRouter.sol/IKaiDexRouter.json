@@ -378,7 +378,7 @@
         },
         {
           "internalType": "uint256",
-          "name": "amountETHMin",
+          "name": "amountKAIMin",
           "type": "uint256"
         },
         {
@@ -422,7 +422,7 @@
         },
         {
           "internalType": "uint256",
-          "name": "amountETHMin",
+          "name": "amountKAIMin",
           "type": "uint256"
         },
         {
@@ -465,7 +465,7 @@
         },
         {
           "internalType": "uint256",
-          "name": "amountETH",
+          "name": "amountKAI",
           "type": "uint256"
         }
       ],
@@ -491,7 +491,7 @@
         },
         {
           "internalType": "uint256",
-          "name": "amountETHMin",
+          "name": "amountKAIMin",
           "type": "uint256"
         },
         {
@@ -529,7 +529,7 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "amountETH",
+          "name": "amountKAI",
           "type": "uint256"
         }
       ],

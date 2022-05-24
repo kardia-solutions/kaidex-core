@@ -26,7 +26,7 @@ contract KaiDexRouter is IKaiDexRouter {
     }
 
     receive() external payable {
-        assert(msg.sender == WKAI); // only accept ETH via fallback from the WKAI contract
+        assert(msg.sender == WKAI); // only accept KAI via fallback from the WKAI contract
     }
 
     // **** ADD LIQUIDITY ****
@@ -115,7 +115,7 @@ contract KaiDexRouter is IKaiDexRouter {
         address token,
         uint256 amountTokenDesired,
         uint256 amountTokenMin,
-        uint256 amountETHMin,
+        uint256 amountKAIMin,
         address to,
         uint256 deadline
     )
@@ -126,26 +126,26 @@ contract KaiDexRouter is IKaiDexRouter {
         ensure(deadline)
         returns (
             uint256 amountToken,
-            uint256 amountETH,
+            uint256 amountKAI,
             uint256 liquidity
         )
     {
-        (amountToken, amountETH) = _addLiquidity(
+        (amountToken, amountKAI) = _addLiquidity(
             token,
             WKAI,
             amountTokenDesired,
             msg.value,
             amountTokenMin,
-            amountETHMin
+            amountKAIMin
         );
         address pair = KaiDexLibrary.pairFor(factory, token, WKAI);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);
-        IWKAI(WKAI).deposit{value: amountETH}();
-        assert(IWKAI(WKAI).transfer(pair, amountETH));
+        IWKAI(WKAI).deposit{value: amountKAI}();
+        assert(IWKAI(WKAI).transfer(pair, amountKAI));
         liquidity = IKAIDexPair(pair).mint(to);
-        // refund dust eth, if any
-        if (msg.value > amountETH)
-            TransferHelper.safeTransferKAI(msg.sender, msg.value - amountETH);
+        // refund dust kai, if any
+        if (msg.value > amountKAI)
+            TransferHelper.safeTransferKAI(msg.sender, msg.value - amountKAI);
     }
 
     // **** REMOVE LIQUIDITY ****
@@ -179,7 +179,7 @@ contract KaiDexRouter is IKaiDexRouter {
         address token,
         uint256 liquidity,
         uint256 amountTokenMin,
-        uint256 amountETHMin,
+        uint256 amountKAIMin,
         address to,
         uint256 deadline
     )
@@ -187,20 +187,20 @@ contract KaiDexRouter is IKaiDexRouter {
         virtual
         override
         ensure(deadline)
-        returns (uint256 amountToken, uint256 amountETH)
+        returns (uint256 amountToken, uint256 amountKAI)
     {
-        (amountToken, amountETH) = removeLiquidity(
+        (amountToken, amountKAI) = removeLiquidity(
             token,
             WKAI,
             liquidity,
             amountTokenMin,
-            amountETHMin,
+            amountKAIMin,
             address(this),
             deadline
         );
         TransferHelper.safeTransfer(token, to, amountToken);
-        IWKAI(WKAI).withdraw(amountETH);
-        TransferHelper.safeTransferKAI(to, amountETH);
+        IWKAI(WKAI).withdraw(amountKAI);
+        TransferHelper.safeTransferKAI(to, amountKAI);
     }
 
     function removeLiquidityWithPermit(
@@ -242,7 +242,7 @@ contract KaiDexRouter is IKaiDexRouter {
         address token,
         uint256 liquidity,
         uint256 amountTokenMin,
-        uint256 amountETHMin,
+        uint256 amountKAIMin,
         address to,
         uint256 deadline,
         bool approveMax,
@@ -253,7 +253,7 @@ contract KaiDexRouter is IKaiDexRouter {
         external
         virtual
         override
-        returns (uint256 amountToken, uint256 amountETH)
+        returns (uint256 amountToken, uint256 amountKAI)
     {
         address pair = KaiDexLibrary.pairFor(factory, token, WKAI);
         uint256 value = approveMax ? type(uint256).max : liquidity;
@@ -266,11 +266,11 @@ contract KaiDexRouter is IKaiDexRouter {
             r,
             s
         );
-        (amountToken, amountETH) = removeLiquidityKAI(
+        (amountToken, amountKAI) = removeLiquidityKAI(
             token,
             liquidity,
             amountTokenMin,
-            amountETHMin,
+            amountKAIMin,
             to,
             deadline
         );
@@ -281,16 +281,16 @@ contract KaiDexRouter is IKaiDexRouter {
         address token,
         uint256 liquidity,
         uint256 amountTokenMin,
-        uint256 amountETHMin,
+        uint256 amountKAIMin,
         address to,
         uint256 deadline
-    ) public virtual override ensure(deadline) returns (uint256 amountETH) {
-        (, amountETH) = removeLiquidity(
+    ) public virtual override ensure(deadline) returns (uint256 amountKAI) {
+        (, amountKAI) = removeLiquidity(
             token,
             WKAI,
             liquidity,
             amountTokenMin,
-            amountETHMin,
+            amountKAIMin,
             address(this),
             deadline
         );
@@ -299,22 +299,22 @@ contract KaiDexRouter is IKaiDexRouter {
             to,
             IKRC20(token).balanceOf(address(this))
         );
-        IWKAI(WKAI).withdraw(amountETH);
-        TransferHelper.safeTransferKAI(to, amountETH);
+        IWKAI(WKAI).withdraw(amountKAI);
+        TransferHelper.safeTransferKAI(to, amountKAI);
     }
 
     function removeLiquidityKAIWithPermitSupportingFeeOnTransferTokens(
         address token,
         uint256 liquidity,
         uint256 amountTokenMin,
-        uint256 amountETHMin,
+        uint256 amountKAIMin,
         address to,
         uint256 deadline,
         bool approveMax,
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external virtual override returns (uint256 amountETH) {
+    ) external virtual override returns (uint256 amountKAI) {
         address pair = KaiDexLibrary.pairFor(factory, token, WKAI);
         uint256 value = approveMax ? type(uint256).max : liquidity;
         IKAIDexPair(pair).permit(
@@ -326,11 +326,11 @@ contract KaiDexRouter is IKaiDexRouter {
             r,
             s
         );
-        amountETH = removeLiquidityKAISupportingFeeOnTransferTokens(
+        amountKAI = removeLiquidityKAISupportingFeeOnTransferTokens(
             token,
             liquidity,
             amountTokenMin,
-            amountETHMin,
+            amountKAIMin,
             to,
             deadline
         );
@@ -532,7 +532,7 @@ contract KaiDexRouter is IKaiDexRouter {
             )
         );
         _swap(amounts, path, to);
-        // refund dust eth, if any
+        // refund dust kai, if any
         if (msg.value > amounts[0])
             TransferHelper.safeTransferKAI(msg.sender, msg.value - amounts[0]);
     }
