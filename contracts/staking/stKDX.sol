@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract stKDX is ERC20("stKDX", "stKDX"){
+contract StKDX is ERC20("stKDX", "stKDX"){
     using SafeMath for uint256;
     IERC20 public kdx;
 

@@ -13,6 +13,8 @@
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
     "deploy-kdx-token": "npx hardhat run --network kai scripts/kdx.js",
+    "deploy-stkdx": "npx hardhat run --network kai scripts/staking.js",
+    "deploy-maker": "npx hardhat run --network kai scripts/kaidex-maker.js",
     "deploy-farming-test": "npx hardhat run --network kai scripts/farming-test.js",
     "deploy-mock-lp": "npx hardhat run --network kai scripts/mock-token.js",
     "deploy-masterchef": "npx hardhat run --network kai scripts/masterchef.js",
