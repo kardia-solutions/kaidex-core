@@ -26,4 +26,6 @@ interface IKRC20 {
         address to,
         uint256 value
     ) external returns (bool);
+    
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
