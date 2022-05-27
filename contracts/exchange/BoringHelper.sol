@@ -26,7 +26,6 @@ contract BoringHelper {
         uint256 decimals;
         string name;
         string symbol;
-        bytes32 DOMAIN_SEPARATOR;
     }
 
     struct PairBase {
@@ -56,7 +55,6 @@ contract BoringHelper {
             infos[i].name = token.name();
             infos[i].symbol = token.symbol();
             infos[i].decimals = token.decimals();
-            infos[i].DOMAIN_SEPARATOR = token.DOMAIN_SEPARATOR();
         }
         return infos;
     }
