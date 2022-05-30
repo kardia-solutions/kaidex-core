@@ -56,7 +56,6 @@ contract KaidexMasterChefV2 is Ownable {
     /// @dev Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint;
 
-    // uint256 private constant MASTERCHEF_KDX_PER_BLOCK = 1e20;
     uint256 private constant ACC_KDX_PRECISION = 1e12;
 
     event Deposit(
@@ -114,7 +113,7 @@ contract KaidexMasterChefV2 is Ownable {
     /// @notice Deposits a dummy token to `MASTER_CHEF` MCV1. This is required because MCV1 holds the minting rights for KDX.
     /// Any balance of transaction sender in `dummyToken` is transferred.
     /// The allocation point for the pool on MCV1 is the total allocation point for all pools that receive double incentives.
-    /// @param dummyToken The address of the ERC-20 token to deposit into MCV1.
+    /// @param dummyToken The address of the KRC-20 token to deposit into MCV1.
     function init(IERC20 dummyToken) external {
         uint256 balance = dummyToken.balanceOf(msg.sender);
         require(balance != 0, "MasterChefV2: Balance must exceed 0");
@@ -143,7 +142,6 @@ contract KaidexMasterChefV2 is Ownable {
         totalAllocPoint = totalAllocPoint.add(allocPoint);
         lpToken.push(_lpToken);
         rewarder.push(_rewarder);
-
         poolInfo.push(
             PoolInfo({
                 allocPoint: allocPoint.to64(),
@@ -187,7 +185,7 @@ contract KaidexMasterChefV2 is Ownable {
         view
         returns (uint256 pending)
     {
-       PoolInfo memory pool = poolInfo[_pid];
+        PoolInfo memory pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accKdxPerShare = pool.accKdxPerShare;
         uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
@@ -245,19 +243,15 @@ contract KaidexMasterChefV2 is Ownable {
         harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][to];
-
         // Effects
         user.amount = user.amount.add(amount);
         user.rewardDebt = user.rewardDebt.add(int256(amount.mul(pool.accKdxPerShare) / ACC_KDX_PRECISION));
-
         // Interactions
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
             _rewarder.onKdxReward(pid, to, to, 0, user.amount);
         }
-
         lpToken[pid].safeTransferFrom(msg.sender, address(this), amount);
-
         emit Deposit(msg.sender, pid, amount, to);
     }
 
@@ -283,9 +277,7 @@ contract KaidexMasterChefV2 is Ownable {
         if (address(_rewarder) != address(0)) {
             _rewarder.onKdxReward(pid, msg.sender, to, 0, user.amount);
         }
-
         lpToken[pid].safeTransfer(to, amount);
-
         emit Withdraw(msg.sender, pid, amount, to);
     }
 
