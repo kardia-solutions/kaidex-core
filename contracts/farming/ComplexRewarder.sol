@@ -2,11 +2,14 @@
 pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/IRewarder.sol";
-import "../interfaces/IMasterChefV2.sol";
+import "../libraries/BoringMath.sol";
+import "../libraries/BoringERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+interface IMasterChefV2 {
+    function lpToken(uint256 pid) external view returns (IERC20 _lpToken);
+}
 
 /**
  * This is a sample contract to be used in the MasterChef contract for partners to reward
@@ -17,13 +20,12 @@ import "../interfaces/IMasterChefV2.sol";
  * onKdxReward().
  *
  */
-contract ComplexRewarder is IRewarder, Ownable {
-    using SafeMath for uint256;
-    using SafeERC20 for IERC20;
+contract ComplexRewarderTime is IRewarder, Ownable {
+    using BoringMath for uint256;
+    using BoringMath128 for uint128;
+    using BoringERC20 for IERC20;
 
-    IERC20 public immutable rewardToken;
-    IERC20 public immutable lpToken;
-    IMasterChefV2 public immutable MCV2;
+    IERC20 public rewardToken;
 
     /// @notice Info of each MCV2 user.
     /// `amount` LP token amount the user has provided.
@@ -33,139 +35,229 @@ contract ComplexRewarder is IRewarder, Ownable {
         uint256 rewardDebt;
     }
 
-    /// @notice Info of each MCV2 poolInfo.
-    /// `accTokenPerShare` Amount of rewardTokens each LP token is worth.
-    /// `lastRewardBlock` The last block rewards were rewarded to the poolInfo.
+    /// @notice Info of each MCV2 pool.
+    /// `allocPoint` The amount of allocation points assigned to the pool.
+    /// Also known as the amount of KDX to distribute per block.
     struct PoolInfo {
-        uint256 accTokenPerShare;
-        uint256 lastRewardBlock;
+        uint128 accTokenPerShare;
+        uint64 lastRewardTime;
+        uint64 allocPoint;
     }
 
-    /// @notice Info of the poolInfo.
-    PoolInfo public poolInfo;
-    /// @notice Info of each user that stakes LP tokens.
-    mapping(address => UserInfo) public userInfo;
+    /// @notice Info of each pool.
+    mapping(uint256 => PoolInfo) public poolInfo;
 
-    uint256 public tokenPerBlock;
+    uint256[] public poolIds;
+
+    /// @notice Info of each user that stakes LP tokens.
+    mapping(uint256 => mapping(address => UserInfo)) public userInfo;
+    /// @dev Total allocation points. Must be the sum of all allocation points in all pools.
+    uint256 totalAllocPoint;
+
+    uint256 public rewardPerSecond;
     uint256 private constant ACC_TOKEN_PRECISION = 1e12;
 
-    event OnReward(address indexed user, uint256 amount);
-    event RewardRateUpdated(uint256 oldRate, uint256 newRate);
-    event AllocPointUpdated(uint256 oldAllocPoint, uint256 newAllocPoint);
+    address private immutable MASTERCHEF_V2;
 
-    modifier onlyMCV2() {
-        require(msg.sender == address(MCV2), "onlyMCV2: only MasterChef can call this function");
+    event LogOnReward(
+        address indexed user,
+        uint256 indexed pid,
+        uint256 amount,
+        address indexed to
+    );
+    event LogPoolAddition(uint256 indexed pid, uint256 allocPoint);
+    event LogSetPool(uint256 indexed pid, uint256 allocPoint);
+    event LogUpdatePool(
+        uint256 indexed pid,
+        uint64 lastRewardTime,
+        uint256 lpSupply,
+        uint256 accTokenPerShare
+    );
+    event LogRewardPerSecond(uint256 rewardPerSecond);
+    event LogInit(IERC20 indexed rewardToken, uint256 rewardPerSecond);
+
+    uint256 internal unlocked;
+    modifier lock() {
+        require(unlocked == 1, "LOCKED");
+        unlocked = 2;
         _;
+        unlocked = 1;
     }
 
     constructor(
-        IERC20 _rewardToken,
-        IERC20 _lpToken,
-        uint256 _tokenPerBlock,
-        IMasterChefV2 _mcv2
+        address _MASTERCHEF_V2
     ) public {
-        rewardToken = _rewardToken;
-        lpToken = _lpToken;
-        tokenPerBlock = _tokenPerBlock;
-        MCV2 = _mcv2;
-        poolInfo = PoolInfo({lastRewardBlock: block.number, accTokenPerShare: 0});
+        MASTERCHEF_V2 = _MASTERCHEF_V2;
     }
 
-    
-    /// @notice Sets the distribution reward rate. This will also update the poolInfo.
-    /// @param _tokenPerBlock The number of tokens to distribute per block
-    function setRewardRate(uint256 _tokenPerBlock) external onlyOwner {
-        updatePool();
-        uint256 oldRate = tokenPerBlock;
-        tokenPerBlock = _tokenPerBlock;
-        emit RewardRateUpdated(oldRate, _tokenPerBlock);
+    function init(address _rewardToken, uint256 _rewardPerSecond)
+        public
+        onlyOwner
+    {
+        require(
+            rewardToken == IERC20(address(0)),
+            "Rewarder: already initialized"
+        );
+        rewardToken = IERC20(_rewardToken);
+        rewardPerSecond = _rewardPerSecond;
+        require(rewardToken != IERC20(address(0)), "Rewarder: bad token");
+        unlocked = 1;
+        emit LogInit(rewardToken, rewardPerSecond);
     }
 
-    // @notice Allows owner to reclaim/withdraw any tokens (including reward tokens) held by this contract
-    /// @param token Token to reclaim, use 0x00 for Ethereum
-    /// @param amount Amount of tokens to reclaim
-    /// @param to Receiver of the tokens
-    function reclaimTokens(address token, uint256 amount, address payable to) public onlyOwner {
-        if (token == address(0)) {
-            to.transfer(amount);
-        } else {
-            IERC20(token).safeTransfer(to, amount);
-        }
-    }
-
-    /// @notice Update reward variables of the given poolInfo.
-    /// @return pool Returns the pool that was updated.
-    function updatePool() public returns (PoolInfo memory pool) {
-        pool = poolInfo;
-
-        if (block.number > pool.lastRewardBlock) {
-            uint256 lpSupply = lpToken.balanceOf(address(MCV2));
-
-            if (lpSupply > 0) {
-                uint256 blocks = block.number.sub(pool.lastRewardBlock);
-                uint256 tokenReward = blocks.mul(tokenPerBlock);
-                pool.accTokenPerShare = pool.accTokenPerShare.add((tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply));
-            }
-
-            pool.lastRewardBlock = block.number;
-            poolInfo = pool;
-        }
-    }
-
-    /// @notice Function called by MasterChef whenever staker claims KDX harvest. 
-    /// Allows staker to also receive a 2nd reward token.
-    /// @param _user Address of user
-    /// @param _lpAmount Number of LP tokens the user has
     function onKdxReward(
-        uint256, 
-        address _user, 
-        address, 
-        uint256, 
-        uint256 _lpAmount
-        ) external override onlyMCV2 {
-        updatePool();
-        PoolInfo memory pool = poolInfo;
-        UserInfo storage user = userInfo[_user];
-        uint256 pendingBal;
-        // if user had deposited
+        uint256 pid,
+        address _user,
+        address to,
+        uint256,
+        uint256 lpToken
+    ) external override onlyMCV2 lock {
+        PoolInfo memory pool = updatePool(pid);
+        UserInfo storage user = userInfo[pid][_user];
+        uint256 pending;
         if (user.amount > 0) {
-            pendingBal = (user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt);
-            uint256 rewardBal = rewardToken.balanceOf(address(this));
-            if (pendingBal > rewardBal) {
-                rewardToken.safeTransfer(_user, rewardBal);
-            } else {
-                rewardToken.safeTransfer(_user, pendingBal);
-            }
+            pending = (user.amount.mul(pool.accTokenPerShare) /
+                ACC_TOKEN_PRECISION).sub(user.rewardDebt);
+            rewardToken.safeTransfer(to, pending);
         }
-        user.amount = _lpAmount;
-        user.rewardDebt = user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION;
-        emit OnReward(_user, pendingBal);
+        user.amount = lpToken;
+        user.rewardDebt =
+            lpToken.mul(pool.accTokenPerShare) /
+            ACC_TOKEN_PRECISION;
+        emit LogOnReward(_user, pid, pending, to);
     }
 
-    /// @notice View function to see pending tokens
-    /// @param _user Address of user.
     function pendingTokens(
-        uint256, 
-        address _user, 
+        uint256 pid,
+        address user,
         uint256
-    ) external view override returns (IERC20[] memory rewardTokens, uint256[] memory rewardAmounts) {
+    )
+        external
+        view
+        override
+        returns (IERC20[] memory rewardTokens, uint256[] memory rewardAmounts)
+    {
         IERC20[] memory _rewardTokens = new IERC20[](1);
         _rewardTokens[0] = (rewardToken);
         uint256[] memory _rewardAmounts = new uint256[](1);
-
-        PoolInfo memory pool = poolInfo;
-        UserInfo storage user = userInfo[_user];
-
-        uint256 accTokenPerShare = pool.accTokenPerShare;
-        uint256 lpSupply = lpToken.balanceOf(address(MCV2));
-
-        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
-            uint256 blocks = block.number.sub(pool.lastRewardBlock);
-            uint256 tokenReward = blocks.mul(tokenPerBlock);
-            accTokenPerShare = accTokenPerShare.add(tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply);
-        }
-
-        _rewardAmounts[0] = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt);
+        _rewardAmounts[0] = pendingToken(pid, user);
         return (_rewardTokens, _rewardAmounts);
-    } 
+    }
+
+    /// @notice Sets the token per second to be distributed. Can only be called by the owner.
+    /// @param _rewardPerSecond The amount of Token to be distributed per second.
+    function setRewardPerSecond(uint256 _rewardPerSecond) public onlyOwner {
+        rewardPerSecond = _rewardPerSecond;
+        emit LogRewardPerSecond(_rewardPerSecond);
+    }
+
+    modifier onlyMCV2() {
+        require(
+            msg.sender == MASTERCHEF_V2,
+            "Only MCV2 can call this function."
+        );
+        _;
+    }
+
+    /// @notice Returns the number of MCV2 pools.
+    function poolLength() public view returns (uint256 pools) {
+        pools = poolIds.length;
+    }
+
+    /// @notice Add a new LP to the pool. Can only be called by the owner.
+    /// DO NOT add the same LP token more than once. Rewards will be messed up if you do.
+    /// @param allocPoint AP of the new pool.
+    /// @param _pid Pid on MCV2
+    function add(uint256 allocPoint, uint256 _pid) public onlyOwner {
+        require(poolInfo[_pid].lastRewardTime == 0, "Pool already exists");
+        uint256 lastRewardTime = block.timestamp;
+        totalAllocPoint = totalAllocPoint.add(allocPoint);
+
+        poolInfo[_pid] = PoolInfo({
+            allocPoint: allocPoint.to64(),
+            lastRewardTime: lastRewardTime.to64(),
+            accTokenPerShare: 0
+        });
+        poolIds.push(_pid);
+        emit LogPoolAddition(_pid, allocPoint);
+    }
+
+    /// @notice Update the given pool's KDX allocation point and `IRewarder` contract. Can only be called by the owner.
+    /// @param _pid The index of the pool. See `poolInfo`.
+    /// @param _allocPoint New AP of the pool.
+    function set(uint256 _pid, uint256 _allocPoint) public onlyOwner {
+        totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(
+            _allocPoint
+        );
+        poolInfo[_pid].allocPoint = _allocPoint.to64();
+        emit LogSetPool(_pid, _allocPoint);
+    }
+
+    /// @notice View function to see pending Token
+    /// @param _pid The index of the pool. See `poolInfo`.
+    /// @param _user Address of user.
+    /// @return pending KDX reward for a given user.
+    function pendingToken(uint256 _pid, address _user)
+        public
+        view
+        returns (uint256 pending)
+    {
+        PoolInfo memory pool = poolInfo[_pid];
+        UserInfo storage user = userInfo[_pid][_user];
+        uint256 accTokenPerShare = pool.accTokenPerShare;
+        uint256 lpSupply = IMasterChefV2(MASTERCHEF_V2).lpToken(_pid).balanceOf(
+            MASTERCHEF_V2
+        );
+        if (block.timestamp > pool.lastRewardTime && lpSupply != 0) {
+            uint256 time = block.timestamp.sub(pool.lastRewardTime);
+            uint256 tokenReward = time.mul(rewardPerSecond).mul(
+                pool.allocPoint
+            ) / totalAllocPoint;
+            accTokenPerShare = accTokenPerShare.add(
+                tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply
+            );
+        }
+        pending = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(
+                user.rewardDebt
+            );
+    }
+
+    /// @notice Update reward variables for all pools. Be careful of gas spending!
+    /// @param pids Pool IDs of all to be updated. Make sure to update all active pools.
+    function massUpdatePools(uint256[] calldata pids) external {
+        uint256 len = pids.length;
+        for (uint256 i = 0; i < len; ++i) {
+            updatePool(pids[i]);
+        }
+    }
+
+    /// @notice Update reward variables of the given pool.
+    /// @param pid The index of the pool. See `poolInfo`.
+    /// @return pool Returns the pool that was updated.
+    function updatePool(uint256 pid) public returns (PoolInfo memory pool) {
+        pool = poolInfo[pid];
+        if (block.timestamp > pool.lastRewardTime) {
+            uint256 lpSupply = IMasterChefV2(MASTERCHEF_V2)
+                .lpToken(pid)
+                .balanceOf(MASTERCHEF_V2);
+
+            if (lpSupply > 0) {
+                uint256 time = block.timestamp.sub(pool.lastRewardTime);
+                uint256 tokenReward = time.mul(rewardPerSecond).mul(
+                    pool.allocPoint
+                ) / totalAllocPoint;
+                pool.accTokenPerShare = pool.accTokenPerShare.add(
+                    (tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply).to128()
+                );
+            }
+            pool.lastRewardTime = block.timestamp.to64();
+            poolInfo[pid] = pool;
+            emit LogUpdatePool(
+                pid,
+                pool.lastRewardTime,
+                lpSupply,
+                pool.accTokenPerShare
+            );
+        }
+    }
 }

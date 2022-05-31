@@ -240,7 +240,7 @@ contract KaidexMasterChef is Ownable {
     }
 
     // Harvest KDX rewards from MasterChef pools.
-    function harvest(uint256 _pid) public returns (address) {
+    function harvest(uint256 _pid) public {
         _deposit(_pid, 0, msg.sender);
     }
 

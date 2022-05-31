@@ -267,11 +267,9 @@ contract KaidexMasterChefV2 is Ownable {
         harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
-
         // Effects
         user.rewardDebt = user.rewardDebt.sub(int256(amount.mul(pool.accKdxPerShare) / ACC_KDX_PRECISION));
         user.amount = user.amount.sub(amount);
-
         // Interactions
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
