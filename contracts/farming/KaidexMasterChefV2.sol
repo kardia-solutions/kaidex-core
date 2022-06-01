@@ -288,20 +288,16 @@ contract KaidexMasterChefV2 is Ownable {
         UserInfo storage user = userInfo[pid][msg.sender];
         int256 accumulatedKdx = int256(user.amount.mul(pool.accKdxPerShare) / ACC_KDX_PRECISION);
         uint256 _pendingKdx = accumulatedKdx.sub(user.rewardDebt).toUInt256();
-
         // Effects
         user.rewardDebt = accumulatedKdx;
-
         // Interactions
         if (_pendingKdx != 0) {
             KDX.safeTransfer(to, _pendingKdx);
         }
-
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
             _rewarder.onKdxReward(pid, msg.sender, to, _pendingKdx, user.amount);
         }
-
         emit Harvest(msg.sender, pid, _pendingKdx);
     }
 
@@ -331,9 +327,7 @@ contract KaidexMasterChefV2 is Ownable {
         if (address(_rewarder) != address(0)) {
             _rewarder.onKdxReward(pid, msg.sender, to, _pendingKdx, user.amount);
         }
-
         lpToken[pid].safeTransfer(to, amount);
-
         emit Withdraw(msg.sender, pid, amount, to);
         emit Harvest(msg.sender, pid, _pendingKdx);
     }

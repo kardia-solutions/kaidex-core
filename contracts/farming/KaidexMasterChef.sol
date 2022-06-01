@@ -30,6 +30,10 @@ contract KaidexMasterChef is Ownable {
 
     // The KDX TOKEN
     KaiDexToken public kdx;
+
+    // Bar address 
+    address public bar;
+    uint256 public barFeePercentage = 200;  // 200 / 10000 = 2%
     
     // KDX tokens created per block.
     uint256 public kdxPerBlock;
@@ -66,7 +70,7 @@ contract KaidexMasterChef is Ownable {
     event LogSetPool(
         uint256 indexed pid, 
         uint256 allocPoint, 
-        IRewarder indexed rewarder, 
+        IRewarder indexed rewarder,
         bool overwrite
     );
     event LogUpdatePool(
@@ -79,12 +83,15 @@ contract KaidexMasterChef is Ownable {
     constructor(
         KaiDexToken _kdx,
         uint256 _kdxPerBlock,
-        uint256 _startBlock
+        uint256 _startBlock,
+        address _bar
     ) public {
         kdx = _kdx;
         kdxPerBlock = _kdxPerBlock;
         startBlock = _startBlock;
+        bar = _bar;
     }
+
 
     function poolLength() external view returns (uint256) {
         return poolInfo.length;
@@ -199,6 +206,7 @@ contract KaidexMasterChef is Ownable {
                 totalAllocPoint
             );
         kdx.mint(address(this), kdxReward);
+        kdx.mint(bar, kdxReward.mul(barFeePercentage).div(10000));
         pool.accKDXPerShare = pool.accKDXPerShare.add(
             kdxReward.mul(1e12).div(lpSupply)
         );
@@ -289,5 +297,15 @@ contract KaidexMasterChef is Ownable {
         } else {
             kdx.transfer(_to, _amount);
         }
+    }
+
+    function setNewBar (address _newbar) public onlyOwner {
+        require(_newbar != bar, "invalid??");
+        bar = _newbar;
+    }
+
+    function setNewBarFee (uint256 _fee) public onlyOwner {
+        require(_fee < 10000, "Maximum fee pecentage!!");
+        barFeePercentage = _fee;
     }
 }
