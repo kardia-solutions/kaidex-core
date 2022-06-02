@@ -206,7 +206,9 @@ contract KaidexMasterChef is Ownable {
                 totalAllocPoint
             );
         kdx.mint(address(this), kdxReward);
-        kdx.mint(bar, kdxReward.mul(barFeePercentage).div(10000));
+        if (bar != address(0)) {
+            kdx.mint(bar, kdxReward.mul(barFeePercentage).div(10000));
+        }
         pool.accKDXPerShare = pool.accKDXPerShare.add(
             kdxReward.mul(1e12).div(lpSupply)
         );

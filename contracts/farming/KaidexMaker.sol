@@ -209,4 +209,22 @@ contract KaidexMaker is Ownable {
     {
         amountOut = _swap(token, kdx, amountIn, bar);
     }
+
+    /// @notice Allows owner to withdraw any tokens (including reward tokens) held by this contract
+    /// @param token Token to reclaim, use 0x00 for Ethereum
+    /// @param amount Amount of tokens to reclaim
+    /// @param to Receiver of the tokens, first of his name, rightful heir to the lost tokens,
+    /// reightful owner of the extra tokens, and ether, protector of mistaken transfers, mother of token reclaimers,
+    /// the Khaleesi of the Great Token Sea, the Unburnt, the Breaker of blockchains.
+    function emergencyWithdraw(
+        address token,
+        uint256 amount,
+        address payable to
+    ) public onlyOwner {
+        if (token == address(0)) {
+            to.transfer(amount);
+        } else {
+            IERC20(token).safeTransfer(to, amount);
+        }
+    }
 }
