@@ -4,13 +4,15 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract StKDX is ERC20("stKDX", "stKDX"){
+contract StKDX is ERC20Snapshot, Ownable {
     using SafeMath for uint256;
     IERC20 public kdx;
 
     // Define the KDX token contract
-    constructor(IERC20 _kdx) public {
+    constructor(IERC20 _kdx) ERC20("stKDX", "stKDX") public {
         kdx = _kdx;
     }
 
@@ -43,5 +45,13 @@ contract StKDX is ERC20("stKDX", "stKDX"){
         uint256 what = _share.mul(kdx.balanceOf(address(this))).div(totalShares);
         _burn(msg.sender, _share);
         kdx.transfer(msg.sender, what);
+    }
+
+    function getCurrentSnapshotId() public view virtual returns (uint256) {
+        return _getCurrentSnapshotId();
+    }
+
+    function snapshot() public onlyOwner {
+        _snapshot();
     }
 }

@@ -15,10 +15,8 @@ async function main() {
 
   // We get the contract to deploy
   const KaiDexToken = await hre.ethers.getContractFactory("KaiDexToken");
-  const kaiDexToken = await KaiDexToken.deploy();
-
+  const kaiDexToken = await KaiDexToken.deploy("Kaidex Token", "KDX", "100000000000000000000000000");
   await kaiDexToken.deployed();
-
   console.log("KAIDEX Token deployed to:", kaiDexToken.address);
 }
 
