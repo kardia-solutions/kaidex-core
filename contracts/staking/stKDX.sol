@@ -26,7 +26,7 @@ contract StKDX is ERC20Snapshot, Ownable {
         // If no stKDX exists, mint it 1:1 to the amount put in
         if (totalShares == 0 || totalKdx == 0) {
             _mint(msg.sender, _amount);
-        } 
+        }
         // Calculate and mint the amount of stKDX the Kdx is worth. The ratio will change overtime, as stKDX is burned/minted and Kdx deposited + gained from fees / withdrawn.
         else {
             uint256 what = _amount.mul(totalShares).div(totalKdx);

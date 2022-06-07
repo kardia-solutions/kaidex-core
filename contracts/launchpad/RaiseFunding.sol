@@ -187,4 +187,16 @@ contract RaiseFunding is ReentrancyGuard, Ownable {
         }
         offeringToken.safeTransfer(address(msg.sender), _offerAmount);
     }
+
+    function emergencyWithdraw(
+        address token,
+        uint256 amount,
+        address payable to
+    ) public onlyOwner {
+        if (token == address(0)) {
+            to.transfer(amount);
+        } else {
+            IERC20(token).safeTransfer(to, amount);
+        }
+    }
 }
