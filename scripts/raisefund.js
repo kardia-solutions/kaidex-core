@@ -8,7 +8,7 @@ const hre = require("hardhat");
 const _buyToken = "0xeabd4203d3b3794d336441e4ca6a5d97005e9a70"; // USDT
 const _offeringToken = "0xc4A4fFA90379694B477B04BA66A5feCce5CDdd25";  // KDX
 const _startTime = "1654575600";
-const _endTime = "1654582800";
+const _endTime = "1654771045";
 const _offeringAmount = "100000000000000000000000";
 const _raisingAmount = "100000000000";
 async function main() {
@@ -34,4 +34,4 @@ main()
     console.error(error);
     process.exit(1);
   });
-//   Raise Funding deployed to: 0x464d809B9075A5494E1b6C3cD70728a13A3AeF8f
+//   Raise Funding deployed to: 0xA96C59EcF22353394dfe77B5B11C112Aa3BEe3ae

@@ -23,7 +23,8 @@
     "deploy-ido": "npx hardhat run --network kai scripts/raisefund.js",
     "test-masterchef": "npx hardhat test test/masterchef-test.js",
     "test-masterchefv2": "npx hardhat test test/masterchefv2-test.js",
-    "test-stKdx": "npx hardhat test test/stKDX-test.js"
+    "test-stKdx": "npx hardhat test test/stKDX-test.js",
+    "test-tier": "npx hardhat test test/tiersystem-test.js"
   },
   "dependencies": {
     "@boringcrypto/boring-solidity": "github:boringcrypto/BoringSolidity",
