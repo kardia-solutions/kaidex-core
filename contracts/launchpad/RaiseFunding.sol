@@ -76,6 +76,24 @@ contract RaiseFunding is ReentrancyGuard, Ownable {
         _;
     }
 
+    function getInfo () public view returns (
+        IERC20,
+        IERC20,
+        uint256,
+        uint256,
+        uint256,
+        uint256
+    ) {
+        return (
+            buyToken,
+            offeringToken,
+            startTime,
+            endTime,
+            offeringAmount,
+            raisingAmount
+        );
+    }
+
     function setOfferingAmount(uint256 _offerAmount) public onlyOwner {
         require(block.timestamp < startTime, "no");
         offeringAmount = _offerAmount;

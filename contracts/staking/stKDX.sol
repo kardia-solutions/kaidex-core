@@ -11,8 +11,10 @@ contract StKDX is ERC20Snapshot, Ownable {
     using SafeMath for uint256;
     IERC20 public kdx;
 
+    mapping(uint256 => uint256) _ratios;
+
     // Define the KDX token contract
-    constructor(IERC20 _kdx) ERC20("stKDX", "stKDX") public {
+    constructor(IERC20 _kdx) public ERC20("stKDX", "stKDX") {
         kdx = _kdx;
     }
 
@@ -42,7 +44,9 @@ contract StKDX is ERC20Snapshot, Ownable {
         // Gets the amount of stKDX in existence
         uint256 totalShares = totalSupply();
         // Calculates the amount of Kdx the stKDX is worth
-        uint256 what = _share.mul(kdx.balanceOf(address(this))).div(totalShares);
+        uint256 what = _share.mul(kdx.balanceOf(address(this))).div(
+            totalShares
+        );
         _burn(msg.sender, _share);
         kdx.transfer(msg.sender, what);
     }
@@ -53,5 +57,35 @@ contract StKDX is ERC20Snapshot, Ownable {
 
     function snapshot() public onlyOwner {
         _snapshot();
+        uint256 snapId = _getCurrentSnapshotId();
+        uint256 totalShares = totalSupply();
+        if (totalShares > 0) {
+            _ratios[snapId] = kdx.balanceOf(address(this)).mul(1e18).div(
+                totalShares
+            );
+        }
+    }
+
+    // Get Kdx balance at snapshot id
+    function getKdxBalanceAt(address _account, uint256 _snapShotId)
+        public
+        view
+        returns (uint256)
+    {
+        uint256 stKdx = balanceOfAt(_account, _snapShotId);
+        return stKdx.mul(_ratios[_snapShotId]).div(1e18);
+    }
+
+    function getKdxBalance(address _account) public view returns (uint256) {
+        uint256 stKdx = balanceOf(_account);
+        uint256 totalShares = totalSupply();
+        // Calculates the amount of Kdx the stKDX is worth
+        return stKdx.mul(kdx.balanceOf(address(this))).div(
+            totalShares
+        );
+    }
+
+    function getRatioAt(uint256 _snapShotId) public view returns (uint256) {
+        return _ratios[_snapShotId];
     }
 }
