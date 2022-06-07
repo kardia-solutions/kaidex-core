@@ -51,7 +51,7 @@ contract StKDX is ERC20Snapshot, Ownable {
         kdx.transfer(msg.sender, what);
     }
 
-    function getCurrentSnapshotId() public view virtual returns (uint256) {
+    function getCurrentSnapshotId() external view virtual returns (uint256) {
         return _getCurrentSnapshotId();
     }
 
@@ -68,7 +68,7 @@ contract StKDX is ERC20Snapshot, Ownable {
 
     // Get Kdx balance at snapshot id
     function getKdxBalanceAt(address _account, uint256 _snapShotId)
-        public
+        external
         view
         returns (uint256)
     {
@@ -76,7 +76,7 @@ contract StKDX is ERC20Snapshot, Ownable {
         return stKdx.mul(_ratios[_snapShotId]).div(1e18);
     }
 
-    function getKdxBalance(address _account) public view returns (uint256) {
+    function getKdxBalance(address _account) external view returns (uint256) {
         uint256 stKdx = balanceOf(_account);
         uint256 totalShares = totalSupply();
         // Calculates the amount of Kdx the stKDX is worth
@@ -85,7 +85,7 @@ contract StKDX is ERC20Snapshot, Ownable {
         );
     }
 
-    function getRatioAt(uint256 _snapShotId) public view returns (uint256) {
+    function getRatioAt(uint256 _snapShotId) external view returns (uint256) {
         return _ratios[_snapShotId];
     }
 }

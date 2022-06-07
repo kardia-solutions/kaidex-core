@@ -4,13 +4,13 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../libraries/TransferHelper.sol";
 
 contract RaiseFunding is ReentrancyGuard, Ownable {
     using SafeMath for uint256;
-    using SafeERC20 for IERC20;
+    using SafeERC20 for ERC20;
 
     // Info of each user.
     struct UserInfo {
@@ -18,9 +18,9 @@ contract RaiseFunding is ReentrancyGuard, Ownable {
         bool claimed; // default false
     }
     // The buy token
-    IERC20 public buyToken; // Ex.USDT, DAI ... If buyToken = address(0) => so this is using KAI native
+    ERC20 public buyToken; // Ex.USDT, DAI ... If buyToken = address(0) => so this is using KAI native
     // The offering token
-    IERC20 public offeringToken;
+    ERC20 public offeringToken;
     // The timestamp when raising starts
     uint256 public startTime;
     // The timestamp when raising ends
@@ -43,9 +43,16 @@ contract RaiseFunding is ReentrancyGuard, Ownable {
         uint256 excessAmount
     );
 
+    struct TokenInfo {
+        ERC20 token;
+        uint256 decimals;
+        string name;
+        string symbol;
+    }
+
     constructor(
-        IERC20 _buyToken,
-        IERC20 _offeringToken,
+        ERC20 _buyToken,
+        ERC20 _offeringToken,
         uint256 _startTime,
         uint256 _endTime,
         uint256 _offeringAmount,
@@ -77,21 +84,32 @@ contract RaiseFunding is ReentrancyGuard, Ownable {
     }
 
     function getInfo () public view returns (
-        IERC20,
-        IERC20,
+        TokenInfo memory,
+        TokenInfo memory,
         uint256,
         uint256,
         uint256,
         uint256
     ) {
+        TokenInfo memory _buyToken = getERC20Info(buyToken);
+        TokenInfo memory _offeringToken = getERC20Info(offeringToken);
         return (
-            buyToken,
-            offeringToken,
+            _buyToken,
+            _offeringToken,
             startTime,
             endTime,
             offeringAmount,
             raisingAmount
         );
+    }
+
+    function getERC20Info (ERC20 _token) private view returns (TokenInfo memory) {
+        return TokenInfo({
+            token: _token,
+            decimals: _token.decimals(),
+            name: _token.name(),
+            symbol: _token.symbol()
+        });
     }
 
     function setOfferingAmount(uint256 _offerAmount) public onlyOwner {
@@ -214,7 +232,7 @@ contract RaiseFunding is ReentrancyGuard, Ownable {
         if (token == address(0)) {
             to.transfer(amount);
         } else {
-            IERC20(token).safeTransfer(to, amount);
+            ERC20(token).safeTransfer(to, amount);
         }
     }
 }
