@@ -14,6 +14,7 @@
     "test": "npx hardhat test",
     "deploy-kdx-token": "npx hardhat run --network kai scripts/kdx.js",
     "deploy-stkdx": "npx hardhat run --network kai scripts/staking.js",
+    "deploy-tier": "npx hardhat run --network kai scripts/tier.js",
     "deploy-dummy": "npx hardhat run --network kai scripts/dummy.js",
     "deploy-maker": "npx hardhat run --network kai scripts/kaidex-maker.js",
     "deploy-farming-test": "npx hardhat run --network kai scripts/farming-test.js",
@@ -24,7 +25,8 @@
     "test-masterchef": "npx hardhat test test/masterchef-test.js",
     "test-masterchefv2": "npx hardhat test test/masterchefv2-test.js",
     "test-stKdx": "npx hardhat test test/stKDX-test.js",
-    "test-tier": "npx hardhat test test/tiersystem-test.js"
+    "test-tier": "npx hardhat test test/tiersystem-test.js",
+    "test-ido": "npx hardhat test test/fundraising.js"
   },
   "dependencies": {
     "@boringcrypto/boring-solidity": "github:boringcrypto/BoringSolidity",

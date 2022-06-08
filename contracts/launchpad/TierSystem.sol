@@ -6,9 +6,6 @@ import "../interfaces/IStKDX.sol";
 
 contract TierSystem is Ownable {
     IStKDX public stKdx;
-
-    // Mapping user => tiers
-    // mapping(address => Tier) private _tiers;
     // Snapshot list
     uint256[] private _snapshotIds;
 
@@ -29,7 +26,7 @@ contract TierSystem is Ownable {
         _snapshotIds.push(_id);
     }
 
-    function getTier (address _account) public view returns(uint256) {
+    function getTier (address _account) external view returns(uint256) {
         uint256 kdxStaked = _getSmallestSnapshot(_account);
         uint256 tier = 0;
         while(tier < kdxStakedTiers.length && kdxStaked >= kdxStakedTiers[tier]) {

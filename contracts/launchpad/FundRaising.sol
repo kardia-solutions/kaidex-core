@@ -6,9 +6,11 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 import "../libraries/TransferHelper.sol";
+import "../interfaces/ITierSystem.sol";
 
-contract FundRaising is ReentrancyGuard, Ownable {
+contract FundRaising is ReentrancyGuard, Ownable, Pausable {
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
 
@@ -25,6 +27,8 @@ contract FundRaising is ReentrancyGuard, Ownable {
     uint256 public startTime;
     // The timestamp when raising ends
     uint256 public endTime;
+    // The timestamp user staring harvest
+    uint256 public harvestTime;
     // total amount of raising tokens need to be raised
     uint256 public raisingAmount;
     // total amount of offeringToken that will offer
@@ -35,6 +39,17 @@ contract FundRaising is ReentrancyGuard, Ownable {
     mapping(address => UserInfo) public userInfo;
     // participators
     address[] public addressList;
+
+    // Tier system
+    ITierSystem public tierSystem;
+
+    // Tier's allocation
+    uint256[4] public allocations = [
+        uint256(1000 * 1e18),
+        uint256(3000 * 1e18),
+        uint256(10000 * 1e18),
+        uint256(30000 * 1e18)
+    ];
 
     event Deposit(address indexed user, uint256 amount);
     event Harvest(
@@ -55,16 +70,25 @@ contract FundRaising is ReentrancyGuard, Ownable {
         ERC20 _offeringToken,
         uint256 _startTime,
         uint256 _endTime,
+        uint256 _harvestTime,
         uint256 _offeringAmount,
-        uint256 _raisingAmount
+        uint256 _raisingAmount,
+        ITierSystem _tierSystem
     ) public {
+        require(
+            _harvestTime >= _endTime &&
+            _endTime > _startTime &&
+            _startTime > block.timestamp
+        );
         buyToken = _buyToken;
         offeringToken = _offeringToken;
         startTime = _startTime;
         endTime = _endTime;
+        harvestTime = _harvestTime;
         offeringAmount = _offeringAmount;
         raisingAmount = _raisingAmount;
         totalAmount = 0;
+        tierSystem = _tierSystem;
     }
 
     modifier depositAllowed(uint256 _amount) {
@@ -77,20 +101,40 @@ contract FundRaising is ReentrancyGuard, Ownable {
     }
 
     modifier harvestAllowed() {
-        require(block.timestamp > endTime, "not harvest time");
+        require(block.timestamp > harvestTime, "not harvest time");
         require(userInfo[msg.sender].amount > 0, "have you participated?");
         require(!userInfo[msg.sender].claimed, "nothing to harvest");
         _;
     }
 
-    function getInfo () public view returns (
-        TokenInfo memory,
-        TokenInfo memory,
-        uint256,
-        uint256,
-        uint256,
-        uint256
-    ) {
+    function updateHarvestTime(uint256 _newTime) public onlyOwner {
+        require(
+            _newTime > block.timestamp && _newTime > endTime,
+            "time invalid!!"
+        );
+        harvestTime = _newTime;
+    }
+
+    function updateEndTime(uint256 _newTime) public onlyOwner {
+        require(
+            _newTime > block.timestamp && _newTime < harvestTime,
+            "time invalid!!"
+        );
+        endTime = _newTime;
+    }
+
+    function getInfo()
+        public
+        view
+        returns (
+            TokenInfo memory,
+            TokenInfo memory,
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
         TokenInfo memory _buyToken = getERC20Info(buyToken);
         TokenInfo memory _offeringToken = getERC20Info(offeringToken);
         return (
@@ -103,13 +147,18 @@ contract FundRaising is ReentrancyGuard, Ownable {
         );
     }
 
-    function getERC20Info (ERC20 _token) private view returns (TokenInfo memory) {
-        return TokenInfo({
-            token: _token,
-            decimals: _token.decimals(),
-            name: _token.name(),
-            symbol: _token.symbol()
-        });
+    function getERC20Info(ERC20 _token)
+        private
+        view
+        returns (TokenInfo memory)
+    {
+        return
+            TokenInfo({
+                token: _token,
+                decimals: _token.decimals(),
+                name: _token.name(),
+                symbol: _token.symbol()
+            });
     }
 
     function setOfferingAmount(uint256 _offerAmount) public onlyOwner {
@@ -127,28 +176,49 @@ contract FundRaising is ReentrancyGuard, Ownable {
         payable
         nonReentrant
         depositAllowed(_amount)
+        whenNotPaused
     {
+        uint256 maxAllocation = _computeMaxAllocation(msg.sender);
+        require(
+            maxAllocation > userInfo[msg.sender].amount,
+            "not eligible amount!!"
+        );
+        uint256 eligibleAmount = maxAllocation - userInfo[msg.sender].amount;
+        uint256 amount = _amount;
+        if (eligibleAmount < _amount) {
+            amount = eligibleAmount;
+        }
         if (buyToken == IERC20(address(0))) {
-            require(msg.value >= _amount, "amount not enough");
-            if (msg.value > _amount) {
-                TransferHelper.safeTransferKAI(msg.sender, msg.value - _amount);
+            require(msg.value >= amount, "amount not enough");
+            if (msg.value > amount) {
+                TransferHelper.safeTransferKAI(msg.sender, msg.value - amount);
             }
         } else {
             buyToken.safeTransferFrom(
                 address(msg.sender),
                 address(this),
-                _amount
+                amount
             );
         }
         if (userInfo[msg.sender].amount == 0) {
             addressList.push(address(msg.sender));
         }
-        userInfo[msg.sender].amount = userInfo[msg.sender].amount.add(_amount);
-        totalAmount = totalAmount.add(_amount);
-        emit Deposit(msg.sender, _amount);
+        userInfo[msg.sender].amount = userInfo[msg.sender].amount.add(amount);
+        totalAmount = totalAmount.add(amount);
+        emit Deposit(msg.sender, amount);
     }
 
-    function harvest() public nonReentrant harvestAllowed {
+    function _computeMaxAllocation(address _account)
+        private
+        view
+        returns (uint256)
+    {
+        uint256 tier = tierSystem.getTier(_account);
+        if (tier == 0) return 0;
+        return allocations[tier - 1];
+    }
+
+    function harvest() public nonReentrant harvestAllowed whenNotPaused {
         uint256 offeringTokenAmount = getOfferingAmount(msg.sender);
         uint256 refundingTokenAmount = getRefundingAmount(msg.sender);
         offeringToken.safeTransfer(address(msg.sender), offeringTokenAmount);
@@ -173,16 +243,15 @@ contract FundRaising is ReentrancyGuard, Ownable {
         return userInfo[_user].claimed;
     }
 
-    // allocation 100000 means 0.1(10%), 1 meanss 0.000001(0.0001%), 1000000 means 1(100%)
     function getUserAllocation(address _user) public view returns (uint256) {
-        return userInfo[_user].amount.mul(1e12).div(totalAmount).div(1e6);
+        return userInfo[_user].amount.mul(1e18).div(totalAmount);
     }
 
     // get the amount of Offering token you will get
     function getOfferingAmount(address _user) public view returns (uint256) {
         if (totalAmount > raisingAmount) {
             uint256 allocation = getUserAllocation(_user);
-            return offeringAmount.mul(allocation).div(1e6);
+            return offeringAmount.mul(allocation).div(1e18);
         } else {
             // userInfo[_user] / (raisingAmount / offeringAmount)
             return
@@ -196,7 +265,7 @@ contract FundRaising is ReentrancyGuard, Ownable {
             return 0;
         }
         uint256 allocation = getUserAllocation(_user);
-        uint256 payAmount = raisingAmount.mul(allocation).div(1e6);
+        uint256 payAmount = raisingAmount.mul(allocation).div(1e18);
         return userInfo[_user].amount.sub(payAmount);
     }
 
@@ -204,35 +273,36 @@ contract FundRaising is ReentrancyGuard, Ownable {
         return addressList.length;
     }
 
-    function finalWithdraw(uint256 _raisingAmount, uint256 _offerAmount)
+    function finalWithdraw(address _destination) public onlyOwner {
+        if (buyToken == IERC20(address(0))) {
+            TransferHelper.safeTransferKAI(_destination, address(this).balance);
+        } else {
+            buyToken.safeTransfer(
+                address(_destination),
+                buyToken.balanceOf(address(this))
+            );
+        }
+    }
+
+    function emergencyWithdraw(address token, address payable to)
         public
         onlyOwner
     {
-        require(
-            _offerAmount < offeringToken.balanceOf(address(this)),
-            "not enough token 1"
-        );
-        if (buyToken == IERC20(address(0))) {
-            TransferHelper.safeTransferKAI(msg.sender, _raisingAmount);
+        if (token == address(0)) {
+            to.transfer(address(this).balance);
         } else {
-            require(
-                _raisingAmount < buyToken.balanceOf(address(this)),
-                "not enough token 0"
+            ERC20(token).safeTransfer(
+                to,
+                ERC20(token).balanceOf(address(this))
             );
-            buyToken.safeTransfer(address(msg.sender), _raisingAmount);
         }
-        offeringToken.safeTransfer(address(msg.sender), _offerAmount);
     }
 
-    function emergencyWithdraw(
-        address token,
-        uint256 amount,
-        address payable to
-    ) public onlyOwner {
-        if (token == address(0)) {
-            to.transfer(amount);
-        } else {
-            ERC20(token).safeTransfer(to, amount);
-        }
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        _unpause();
     }
 }
