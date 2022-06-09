@@ -139,16 +139,28 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
             uint256,
             uint256,
             uint256,
+            uint256,
             uint256
         )
     {
-        TokenInfo memory _buyToken = getERC20Info(buyToken);
+        TokenInfo memory _buyToken;
+        if (buyToken == ERC20(address(0))) {
+            _buyToken = TokenInfo({
+                token: ERC20(address(0)),
+                decimals: 18,
+                name: 'KardiaChain',
+                symbol: 'KAI'
+            });
+        } else {
+            _buyToken = getERC20Info(buyToken);
+        }
         TokenInfo memory _offeringToken = getERC20Info(offeringToken);
         return (
             _buyToken,
             _offeringToken,
             startTime,
             endTime,
+            harvestTime,
             offeringAmount,
             raisingAmount
         );
