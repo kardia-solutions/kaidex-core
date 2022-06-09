@@ -62,18 +62,11 @@ describe("Staking KAIDEX Token", function () {
         await this.stKDX.snapshot();
         await this.stKDX.snapshot();
         await this.stKDX.snapshot();
-        await this.tierSystem.addSnapshotIds(1);
-        await this.tierSystem.addSnapshotIds(2);
-        await this.tierSystem.addSnapshotIds(3);
-        await this.tierSystem.addSnapshotIds(4);
-        await this.tierSystem.addSnapshotIds(5);
-        await this.tierSystem.addSnapshotIds(6);
-        await this.tierSystem.addSnapshotIds(7);
-        expect(await this.tierSystem.getTier(this.alice.address)).to.equal("4")
-        expect(await this.tierSystem.getTier(this.bob.address)).to.equal("0")
-        expect(await this.tierSystem.getTier(this.carol.address)).to.equal("3")
-        expect(await this.tierSystem.getTier(this.john.address)).to.equal("3")
-        expect(await this.tierSystem.getTier(this.lew.address)).to.equal("1")
+        expect(await this.tierSystem.getTier(this.alice.address, [1,2,3,4,5,6,7])).to.equal("4")
+        expect(await this.tierSystem.getTier(this.bob.address, [1,2,3,4,5,6,7])).to.equal("2")
+        expect(await this.tierSystem.getTier(this.carol.address, [1,2,3,4,5,6,7])).to.equal("3")
+        expect(await this.tierSystem.getTier(this.john.address, [1,2,3,4,5,6,7])).to.equal("3")
+        expect(await this.tierSystem.getTier(this.lew.address, [1,2,3,4,5,6,7])).to.equal("1")
         
         // Approve raising token (kdx) to fundraising contract
         await this.usdt.approve(this.fundRaising.address, "1000000000000000000000000000000000000");
@@ -82,17 +75,20 @@ describe("Staking KAIDEX Token", function () {
         await this.usdt.connect(this.john).approve(this.fundRaising.address, "1000000000000000000000000000000000000", { from: this.john.address });
         await this.usdt.connect(this.lew).approve(this.fundRaising.address, "1000000000000000000000000000000000000", { from: this.lew.address });
 
+        // Set snapshot ids
+        await this.fundRaising.setSnapshotIds([1,2,3,4,5,6,7]);
+
         // Deposit
         await this.fundRaising.deposit("20000000000000000000000");
         await this.fundRaising.deposit("20000000000000000000000"); 
         const aliceInfo = await this.fundRaising.userInfo(this.alice.address);
-        // Allice's total deposite: 30K usdt
+        // // Allice's total deposite: 30K usdt
         expect(aliceInfo[0].toString()).to.equal("30000000000000000000000");
         expect(await this.fundRaising.totalAmount()).to.equal("30000000000000000000000");
         expect(await this.usdt.balanceOf(this.alice.address)).to.equal("20000000000000000000000");
 
-        // Bob deposit fail
-        await expect(this.fundRaising.connect(this.bob).deposit("20000000000000000000000")).to.be.revertedWith("not eligible amount!!")
+        // // Bob deposit fail
+        // await expect(this.fundRaising.connect(this.bob).deposit("20000000000000000000000")).to.be.revertedWith("not eligible amount!!")
 
         // Carol's total deposite: 10K usdt
         await this.fundRaising.connect(this.carol).deposit("20000000000000000000000");
@@ -185,18 +181,12 @@ describe("Staking KAIDEX Token", function () {
         await this.stKDX.snapshot();
         await this.stKDX.snapshot();
         await this.stKDX.snapshot();
-        await this.tierSystem.addSnapshotIds(1);
-        await this.tierSystem.addSnapshotIds(2);
-        await this.tierSystem.addSnapshotIds(3);
-        await this.tierSystem.addSnapshotIds(4);
-        await this.tierSystem.addSnapshotIds(5);
-        await this.tierSystem.addSnapshotIds(6);
-        await this.tierSystem.addSnapshotIds(7);
-        expect(await this.tierSystem.getTier(this.alice.address)).to.equal("4")
-        expect(await this.tierSystem.getTier(this.bob.address)).to.equal("0")
-        expect(await this.tierSystem.getTier(this.carol.address)).to.equal("3")
-        expect(await this.tierSystem.getTier(this.john.address)).to.equal("3")
-        expect(await this.tierSystem.getTier(this.lew.address)).to.equal("1")
+
+        expect(await this.tierSystem.getTier(this.alice.address, [1,2,3,4,5,6,7])).to.equal("4")
+        expect(await this.tierSystem.getTier(this.bob.address, [1,2,3,4,5,6,7])).to.equal("2")
+        expect(await this.tierSystem.getTier(this.carol.address, [1,2,3,4,5,6,7])).to.equal("3")
+        expect(await this.tierSystem.getTier(this.john.address, [1,2,3,4,5,6,7])).to.equal("3")
+        expect(await this.tierSystem.getTier(this.lew.address, [1,2,3,4,5,6,7])).to.equal("1")
         
         // Approve raising token (kdx) to fundraising contract
         await this.usdt.approve(this.fundRaising.address, "1000000000000000000000000000000000000");
@@ -204,6 +194,9 @@ describe("Staking KAIDEX Token", function () {
         await this.usdt.connect(this.carol).approve(this.fundRaising.address, "1000000000000000000000000000000000000", { from: this.carol.address });
         await this.usdt.connect(this.john).approve(this.fundRaising.address, "1000000000000000000000000000000000000", { from: this.john.address });
         await this.usdt.connect(this.lew).approve(this.fundRaising.address, "1000000000000000000000000000000000000", { from: this.lew.address });
+
+        // Set snapshot ids
+        await this.fundRaising.setSnapshotIds([1,2,3,4,5,6,7]);
 
         // Deposit
         await this.fundRaising.deposit("20000000000000000000000");
@@ -214,8 +207,8 @@ describe("Staking KAIDEX Token", function () {
         expect(await this.fundRaising.totalAmount()).to.equal("30000000000000000000000");
         expect(await this.usdt.balanceOf(this.alice.address)).to.equal("20000000000000000000000");
 
-        // Bob deposit fail
-        await expect(this.fundRaising.connect(this.bob).deposit("20000000000000000000000")).to.be.revertedWith("not eligible amount!!")
+        // // Bob deposit fail
+        // await expect(this.fundRaising.connect(this.bob).deposit("20000000000000000000000")).to.be.revertedWith("not eligible amount!!")
 
         // Carol's total deposite: 10K usdt
         await this.fundRaising.connect(this.carol).deposit("20000000000000000000000");

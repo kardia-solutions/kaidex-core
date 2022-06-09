@@ -27,26 +27,32 @@ describe("Staking KAIDEX Token", function () {
         await this.stKDX.enter("30000000000000000000000"); // 30K
         await this.stKDX.connect(this.bob).enter("10000000000000000000000"); // 10k
         await this.stKDX.snapshot();
-        await this.tierSystem.addSnapshotIds(1);
-        expect(await this.tierSystem.getTier(this.alice.address)).to.equal("4")
-        expect(await this.tierSystem.getTier(this.bob.address)).to.equal("3")
+        expect(await this.tierSystem.getTier(this.alice.address, [1])).to.equal("4")
+        expect(await this.tierSystem.getTier(this.bob.address, [1])).to.equal("3")
+        expect(await this.tierSystem.getAverage(this.alice.address, [1])).to.equal("30000000000000000000000")
+        expect(await this.tierSystem.getAverage(this.bob.address, [1])).to.equal("10000000000000000000000")
         await this.stKDX.leave("19000000000000000000000"); // 19K
-        await this.stKDX.connect(this.bob).leave("7000000000000000000000"); // 900k
+        await this.stKDX.connect(this.bob).leave("7000000000000000000000"); // 7k
         await this.stKDX.snapshot();
-        await this.tierSystem.addSnapshotIds(2);
-        expect(await this.tierSystem.getTier(this.alice.address)).to.equal("3")
-        expect(await this.tierSystem.getTier(this.bob.address)).to.equal("2")
-        await this.stKDX.leave("1000000000000000000000"); // 19K
-        await this.stKDX.connect(this.bob).leave("1000000000000000000000"); // 900k
+        expect(await this.tierSystem.getAverage(this.alice.address, [2])).to.equal("11000000000000000000000")
+        expect(await this.tierSystem.getAverage(this.bob.address, [2])).to.equal("3000000000000000000000")
+        // Allice average = (30 + 11) / 2 = 20.5k
+        expect(await this.tierSystem.getAverage(this.alice.address, [1, 2])).to.equal("20500000000000000000000")
+        // Bob average = (10 + 3) / 2 = 6.5K
+        expect(await this.tierSystem.getAverage(this.bob.address, [1, 2])).to.equal("6500000000000000000000")
+        expect(await this.tierSystem.getTier(this.alice.address, [1, 2])).to.equal("3")
+        expect(await this.tierSystem.getTier(this.bob.address,  [1, 2])).to.equal("2")
+        await this.stKDX.leave("1000000000000000000000"); // 1k
+        await this.stKDX.connect(this.bob).leave("1000000000000000000000"); // 1k
         await this.stKDX.snapshot();
-        await this.tierSystem.addSnapshotIds(3);
-        expect(await this.tierSystem.getTier(this.alice.address)).to.equal("3")
-        expect(await this.tierSystem.getTier(this.bob.address)).to.equal("1")
-        await this.kdx.connect(this.carol).transfer(this.stKDX.address, "10000000000000000000000", { from: this.carol.address })
-        await this.stKDX.snapshot();
-        await this.tierSystem.addSnapshotIds(4);
-        expect(await this.tierSystem.getTier(this.alice.address)).to.equal("3")
-        expect(await this.tierSystem.getTier(this.bob.address)).to.equal("1")
+        expect(await this.tierSystem.getAverage(this.alice.address, [3])).to.equal("10000000000000000000000")  // 10K
+        expect(await this.tierSystem.getAverage(this.bob.address, [3])).to.equal("2000000000000000000000")
+        // Allice average = (30 + 11 + 10) / 3 = 17k
+        expect(await this.tierSystem.getAverage(this.alice.address, [1, 2, 3])).to.equal("17000000000000000000000")
+        // // Bob average = (10 + 3 + 2) / 3 = 6.5K
+        expect(await this.tierSystem.getAverage(this.bob.address, [1, 2, 3])).to.equal("5000000000000000000000")
+        expect(await this.tierSystem.getTier(this.alice.address, [1, 2, 3])).to.equal("3")
+        expect(await this.tierSystem.getTier(this.bob.address,  [1, 2, 3])).to.equal("2")
     })
 
     it("Did tier system work right while transfer stKDX??????????", async function () {
@@ -54,17 +60,18 @@ describe("Staking KAIDEX Token", function () {
         await this.kdx.connect(this.bob).approve(this.stKDX.address, "1000000000000000000000000000000000000", { from: this.bob.address });
         await this.kdx.connect(this.carol).approve(this.stKDX.address, "1000000000000000000000000000000000000", { from: this.carol.address });
         await this.stKDX.enter("30000000000000000000000"); // 30K
-        await this.stKDX.connect(this.bob).enter("10000000000000000000000"); // 10k
-        await this.stKDX.connect(this.carol).enter("1000000000000000000000"); // 10k
+        await this.stKDX.connect(this.bob).enter("10000000000000000000000"); // 1k
+        await this.stKDX.connect(this.carol).enter("1000000000000000000000"); // 1k
         await this.stKDX.snapshot();
-        await this.tierSystem.addSnapshotIds(1);
-        expect(await this.tierSystem.getTier(this.alice.address)).to.equal("4")
-        expect(await this.tierSystem.getTier(this.bob.address)).to.equal("3")
-        await this.stKDX.transfer(this.carol.address, "1000000000000000000000");
+        expect(await this.tierSystem.getTier(this.alice.address, [1])).to.equal("4")
+        expect(await this.tierSystem.getTier(this.bob.address, [1])).to.equal("3")
+        await this.stKDX.transfer(this.carol.address, "1000000000000000000000"); //1k
         await this.stKDX.snapshot();
-        await this.tierSystem.addSnapshotIds(2);
-        expect(await this.tierSystem.getTier(this.alice.address)).to.equal("3")
-        expect(await this.tierSystem.getTier(this.bob.address)).to.equal("3")
-        expect(await this.tierSystem.getTier(this.carol.address)).to.equal("1")
+        // Alice = (30 + 29) / 2 = 29.5K
+        expect(await this.tierSystem.getTier(this.alice.address, [1, 2])).to.equal("3")
+        expect(await this.tierSystem.getTier(this.bob.address, [1, 2])).to.equal("3")
+        // Carol = (2 + 1) / 2 = 1.5k
+        expect(await this.tierSystem.getAverage(this.carol.address, [1, 2])).to.equal("1500000000000000000000")
+        expect(await this.tierSystem.getTier(this.carol.address, [1, 2])).to.equal("1")
     })
 })

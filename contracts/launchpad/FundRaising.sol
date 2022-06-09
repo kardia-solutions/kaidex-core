@@ -51,6 +51,9 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
         uint256(30000 * 1e18)
     ];
 
+    // snapshot ids
+    uint256[] public snapshotIds;
+
     event Deposit(address indexed user, uint256 amount);
     event Harvest(
         address indexed user,
@@ -106,6 +109,10 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
         require(!userInfo[msg.sender].claimed, "nothing to harvest");
         _;
     }
+
+    function setSnapshotIds (uint256[] memory _snapshotIds) public onlyOwner {
+        snapshotIds = _snapshotIds;
+    }   
 
     function updateHarvestTime(uint256 _newTime) public onlyOwner {
         require(
@@ -213,7 +220,8 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
         view
         returns (uint256)
     {
-        uint256 tier = tierSystem.getTier(_account);
+        require(snapshotIds.length > 0, "Snapshot id not set");
+        uint256 tier = tierSystem.getTier(_account, snapshotIds);
         if (tier == 0) return 0;
         return allocations[tier - 1];
     }
