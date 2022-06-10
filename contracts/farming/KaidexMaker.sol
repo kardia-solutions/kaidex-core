@@ -27,6 +27,8 @@ contract KaidexMaker is Ownable {
         uint256 amountKDX
     );
 
+    address public converter;
+
     constructor(
         address _factory,
         address _bar,
@@ -37,6 +39,7 @@ contract KaidexMaker is Ownable {
         bar = _bar;
         kdx = _kdx;
         wkai = _wkai;
+        converter = msg.sender;
     }
 
     function bridgeFor(address token) public view returns (address bridge) {
@@ -58,20 +61,24 @@ contract KaidexMaker is Ownable {
         emit LogBridgeSet(token, bridge);
     }
 
-    modifier onlyEOA() {
+    modifier onlyConverter() {
         // Try to make flash-loan exploit harder to do by only allowing externally owned addresses.
-        require(msg.sender == tx.origin, "KaidexMaker: must use EOA");
+        require(msg.sender == converter, "KaidexMaker: must use Converter");
         _;
     }
 
-    function convert(address token0, address token1) external onlyEOA() {
+    function setConverter (address _new) public onlyOwner {
+        converter = _new;
+    }
+
+    function convert(address token0, address token1) external onlyConverter() {
         _convert(token0, token1);
     }
 
     function convertMultiple(
         address[] calldata token0,
         address[] calldata token1
-    ) external onlyEOA() {
+    ) external onlyConverter() {
         // TODO: This can be optimized a fair bit, but this is safer and simpler for now
         uint256 len = token0.length;
         for (uint256 i = 0; i < len; i++) {

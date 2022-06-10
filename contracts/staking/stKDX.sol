@@ -13,9 +13,21 @@ contract StKDX is ERC20Snapshot, Ownable {
 
     mapping(uint256 => uint256) _ratios;
 
+    address public snapshoter;
+
     // Define the KDX token contract
     constructor(IERC20 _kdx) public ERC20("stKDX", "stKDX") {
         kdx = _kdx;
+        snapshoter = _msgSender();
+    }
+
+    modifier onlySnapshoter {
+        require(snapshoter == _msgSender(), "Ownable: caller is not the snapshoter");
+        _;
+    }
+
+    function setSnapshoter (address _new) public onlyOwner {
+        snapshoter = _new;
     }
 
     // Enter the bar. Pay some KDXs. Earn some shares.
@@ -55,7 +67,7 @@ contract StKDX is ERC20Snapshot, Ownable {
         return _getCurrentSnapshotId();
     }
 
-    function snapshot() public onlyOwner {
+    function snapshot() public onlySnapshoter {
         _snapshot();
         uint256 snapId = _getCurrentSnapshotId();
         uint256 totalShares = totalSupply();
