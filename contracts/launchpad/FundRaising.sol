@@ -52,7 +52,8 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
     ];
 
     // snapshot ids
-    uint256[] public snapshotIds;
+    uint256 public snapshotFrom;
+    uint256 public snapshotTo;
 
     event Deposit(address indexed user, uint256 amount);
     event Harvest(
@@ -76,7 +77,9 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
         uint256 _harvestTime,
         uint256 _offeringAmount,
         uint256 _raisingAmount,
-        ITierSystem _tierSystem
+        ITierSystem _tierSystem,
+        uint256 _snapshotFrom,
+        uint256 _snapshotTo
     ) public {
         require(
             _harvestTime >= _endTime &&
@@ -92,6 +95,8 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
         raisingAmount = _raisingAmount;
         totalAmount = 0;
         tierSystem = _tierSystem;
+        snapshotFrom = _snapshotFrom;
+        snapshotTo = _snapshotTo;
     }
 
     modifier depositAllowed(uint256 _amount) {
@@ -110,9 +115,16 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
         _;
     }
 
-    function setSnapshotIds (uint256[] memory _snapshotIds) public onlyOwner {
-        snapshotIds = _snapshotIds;
-    }   
+    function setSnapshotFrom (uint256 id) public onlyOwner {
+        require(id > 0, 'Id invalid');
+        snapshotFrom = id;
+    }
+
+    function setSnapshotTo (uint256 id) public onlyOwner {
+        require(id > 0, 'Id invalid');
+        snapshotTo = id;
+    }
+
 
     function updateHarvestTime(uint256 _newTime) public onlyOwner {
         require(
@@ -232,8 +244,18 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
         view
         returns (uint256)
     {
-        require(snapshotIds.length > 0, "Snapshot id not set");
-        uint256 tier = tierSystem.getTier(_account, snapshotIds);
+        require(snapshotFrom > 0 && snapshotTo > snapshotFrom, "Snapshot id not set");
+        uint256 tier = tierSystem.getTierFromTo(_account, snapshotFrom, snapshotTo);
+        if (tier == 0) return 0;
+        return allocations[tier - 1];
+    }
+
+    function getTier (address _account) external view returns (uint256) {
+        return tierSystem.getTierFromTo(_account, snapshotFrom, snapshotTo);
+    }
+
+    function getAllocation (address _account) external view returns (uint256) {
+        uint256 tier = tierSystem.getTierFromTo(_account, snapshotFrom, snapshotTo);
         if (tier == 0) return 0;
         return allocations[tier - 1];
     }

@@ -4,4 +4,5 @@ pragma experimental ABIEncoderV2;
 
 interface IStKDX {
     function getKdxBalanceAt(address _account, uint256 _snapShotId) external view returns (uint256);
+    function getCurrentSnapshotId() external view returns (uint256);
 }

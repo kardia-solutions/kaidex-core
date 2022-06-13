@@ -24,8 +24,9 @@ contract TierSystem is Ownable {
         kdxStakedTiers = _tiers;
     }
 
-    function getTier (address _account, uint256[] memory _snapshotIds) external view returns(uint256) {
-        uint256 kdxStaked = _getAverage(_account,_snapshotIds);
+    function getTier (address _account) external view returns(uint256) {
+        uint256 currentSnapshotId = stKdx.getCurrentSnapshotId();
+        uint256 kdxStaked = stKdx.getKdxBalanceAt(_account, currentSnapshotId);
         uint256 tier = 0;
         while(tier < kdxStakedTiers.length && kdxStaked >= kdxStakedTiers[tier]) {
             tier ++;
@@ -33,20 +34,34 @@ contract TierSystem is Ownable {
         return tier;
     }
 
-    function getAverage (address _account, uint256[] memory _snapshotIds) public view returns (uint256) {
-        return _getAverage((_account), _snapshotIds);
+    // Get tier from _snapshotIdFrom to _snapshotIdTo 
+    function getTierFromTo (address _account, uint256 _snapshotIdFrom, uint256 _snapshotIdTo) external view returns(uint256) {
+        uint256 currentSnapshotId = stKdx.getCurrentSnapshotId();
+        uint256 to = _snapshotIdTo < currentSnapshotId ? _snapshotIdTo : currentSnapshotId;
+        uint256 kdxStaked = _getAverageFrom(_account,_snapshotIdFrom, to);
+        uint256 tier = 0;
+        while(tier < kdxStakedTiers.length && kdxStaked >= kdxStakedTiers[tier]) {
+            tier ++;
+        }
+        return tier;
     }
 
-    function _getAverage(address _account, uint256[] memory _snapshotIds)
+    function _getAverageFrom(address _account, uint256 _snapshotIdFrom, uint256 _snapshotIdTo)
         private
         view
         returns (uint256)
     {
-        if (_snapshotIds.length == 0) return 0;
-        uint256 averageBalance;
-        for (uint256 i = 0; i < _snapshotIds.length; i++) {
-            averageBalance = averageBalance.add(stKdx.getKdxBalanceAt(_account, _snapshotIds[i]));
+        if (_snapshotIdFrom >= _snapshotIdTo) {
+            return stKdx.getKdxBalanceAt(_account, _snapshotIdTo);
         }
-        return averageBalance / _snapshotIds.length;
+        uint256 averageBalance;
+        for (uint256 i = _snapshotIdFrom; i <= _snapshotIdTo; i++) {
+            averageBalance = averageBalance.add(stKdx.getKdxBalanceAt(_account, i));
+        }
+        return averageBalance / (_snapshotIdTo - _snapshotIdFrom + 1);
+    }
+
+    function getAverageFrom (address _account, uint256 _snapshotIdFrom, uint256 _snapshotIdTo) public view returns (uint256) {
+        return _getAverageFrom((_account), _snapshotIdFrom, _snapshotIdTo);
     }
 }

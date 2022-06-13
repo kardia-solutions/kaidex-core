@@ -9,14 +9,38 @@
           "internalType": "address",
           "name": "_account",
           "type": "address"
-        },
-        {
-          "internalType": "uint256[]",
-          "name": "_snapshotIds",
-          "type": "uint256[]"
         }
       ],
       "name": "getTier",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_account",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_snapshotIdFrom",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_snapshotIdTo",
+          "type": "uint256"
+        }
+      ],
+      "name": "getTierFromTo",
       "outputs": [
         {
           "internalType": "uint256",
