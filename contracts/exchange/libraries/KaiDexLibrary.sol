@@ -29,7 +29,7 @@ library KaiDexLibrary {
                         hex"ff",
                         factory,
                         keccak256(abi.encodePacked(token0, token1)),
-                        hex"e211f96cb3bd031b6a72fd2d205e0a0427ac351e9ad2a8cb32549bf1bfd84980" // init code hash
+                        hex"1881cffb5f35d9eb9d69ec1787e5321b77870954a44a2adeae285a755659ad07" // init code hash
                     )
                 )
             )

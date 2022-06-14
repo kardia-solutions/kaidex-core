@@ -12,7 +12,7 @@
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
-    "deploy-kdx-token": "npx hardhat run --network kai scripts/kdx.js",
+    "deploy-kdx": "npx hardhat run --network kai scripts/kdx.js",
     "deploy-stkdx": "npx hardhat run --network kai scripts/staking.js",
     "deploy-tier": "npx hardhat run --network kai scripts/tier.js",
     "deploy-dummy": "npx hardhat run --network kai scripts/dummy.js",

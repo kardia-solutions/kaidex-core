@@ -5,10 +5,10 @@
 // Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 
-const _kdx = "0xc4A4fFA90379694B477B04BA66A5feCce5CDdd25";
-const _factory = "0x3c4aff03317d8a7704a1ff9ba1a1476df1ce3e44";
-const _stkdx = "0x97094C22aeD7cb346Ba48266de27eDfB1E6B1311";
-const _wkai = "0xaf984e23eaa3e7967f3c5e007fbe397d8566d23d";
+const _kdx = "0xb7aABF462677024Aa4b603A0e8A046eBa34b6e8e";
+const _factory = "0x6208a282a0Bb02db05211B6D15fE793419B70E5c";
+const _stkdx = "0xFc4aCfbb0e41DDFC50fF253C0dD5556f0E18FA9D";
+const _wkai = "0xAF984E23EAA3E7967F3C5E007fbe397D8566D23d";
 
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
