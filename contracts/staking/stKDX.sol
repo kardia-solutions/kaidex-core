@@ -16,7 +16,7 @@ contract StKDX is ERC20Snapshot, Ownable {
     address public snapshoter;
 
     // Define the KDX token contract
-    constructor(IERC20 _kdx) public ERC20("stKDX", "stKDX") {
+    constructor(IERC20 _kdx) public ERC20("StKDX", "stKDX") {
         kdx = _kdx;
         snapshoter = _msgSender();
     }
