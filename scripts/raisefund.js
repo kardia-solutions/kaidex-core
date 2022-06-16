@@ -1,4 +1,4 @@
-    // We require the Hardhat Runtime Environment explicitly here. This is optional
+// We require the Hardhat Runtime Environment explicitly here. This is optional
 // but useful for running the script in a standalone fashion through `node <script>`.
 //
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
@@ -13,6 +13,8 @@ const _harvestTime = "1655697562"
 const _offeringAmount = "100000000000000000000000";
 const _raisingAmount = "100000000000";
 const _tier = "0xBC6b92D6212D3775aF97A2E56A03e087fd31dc79"
+const _snapshotForm = 0;
+const _snapshotTo = 1
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
@@ -22,7 +24,18 @@ async function main() {
   // await hre.run('compile');
   // We get the contract to deploy
   const FundRaising = await hre.ethers.getContractFactory("FundRaising");
-  const fundRaising = await FundRaising.deploy(_buyToken, _offeringToken, _startTime, _endTime, _harvestTime, _offeringAmount, _raisingAmount, _tier, {gasLimit: 30000000});
+  const fundRaising = await FundRaising.deploy(
+    _buyToken,
+    _offeringToken,
+    _startTime,
+    _endTime,
+    _harvestTime,
+    _offeringAmount,
+    _raisingAmount,
+    _tier,
+    _snapshotForm,
+    _snapshotTo,
+    { gasLimit: 30000000 });
   await fundRaising.deployed();
   console.log("FundRaising deployed to:", fundRaising.address);
 

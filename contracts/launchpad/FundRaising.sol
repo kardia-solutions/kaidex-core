@@ -44,11 +44,11 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
     ITierSystem public tierSystem;
 
     // Tier's allocation
-    uint256[4] public allocations = [
-        uint256(1000 * 1e18),
-        uint256(3000 * 1e18),
-        uint256(10000 * 1e18),
-        uint256(30000 * 1e18)
+    uint256[4] private _allocations = [
+        uint256(1000),
+        uint256(3000),
+        uint256(10000),
+        uint256(30000) 
     ];
 
     // snapshot ids
@@ -247,7 +247,7 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
         require(snapshotFrom > 0 && snapshotTo > snapshotFrom, "Snapshot id not set");
         uint256 tier = tierSystem.getTierFromTo(_account, snapshotFrom, snapshotTo);
         if (tier == 0) return 0;
-        return allocations[tier - 1];
+        return allocations(tier - 1);
     }
 
     function getTier (address _account) external view returns (uint256) {
@@ -257,8 +257,16 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
     function getAllocation (address _account) external view returns (uint256) {
         uint256 tier = tierSystem.getTierFromTo(_account, snapshotFrom, snapshotTo);
         if (tier == 0) return 0;
-        return allocations[tier - 1];
+        return allocations(tier - 1);
     }
+
+    function allocations(uint256 _index) view public returns (uint256) {
+        require(_index < _allocations.length);
+        if (buyToken == IERC20(address(0)) ) {
+            return _allocations[_index].mul(1e18);
+        }
+        return _allocations[_index].mul(10 ** buyToken.decimals());
+    } 
 
     function harvest() public nonReentrant harvestAllowed whenNotPaused {
         uint256 offeringTokenAmount = getOfferingAmount(msg.sender);
