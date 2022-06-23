@@ -8,19 +8,27 @@ import "../interfaces/IStKDX.sol";
 contract TierSystem is Ownable {
     using SafeMath for uint256;
     IStKDX public stKdx;
-    // Tier checking
-    uint256[4] public kdxStakedTiers = [
-        uint256(1000 * 1e18), // Silver
-        uint256(3000 * 1e18),  // Platinum
-        uint256(10000 * 1e18),  // Sapphire
-        uint256(30000 * 1e18)  // Diamond
+    // // Tier checking: 
+    // uint256[2][] public kdxStakedTiers = [
+    //     [uint256(1000 * 1e18), 500], // Silver
+    //     [uint256(3000 * 1e18), 1500],  // Platinum
+    //     [uint256(10000 * 1e18), 5000],  // Sapphire
+    //     [uint256(30000 * 1e18), 15000]  // Diamond
+    // ];
+
+        // Tier checking: 
+    uint256[2][] public kdxStakedTiers = [
+        [uint256(1000), 500], // Silver
+        [uint256(3000), 1500],  // Platinum
+        [uint256(10000), 5000],  // Sapphire
+        [uint256(30000), 15000]  // Diamond
     ];
 
     constructor(IStKDX _stKdx) {
         stKdx = _stKdx;
     }
 
-    function setKdxStakedTiers (uint256[4] memory _tiers) public onlyOwner {
+    function setKdxStakedTiers (uint256[2][] memory _tiers) public onlyOwner {
         kdxStakedTiers = _tiers;
     }
 
@@ -28,10 +36,16 @@ contract TierSystem is Ownable {
         uint256 currentSnapshotId = stKdx.getCurrentSnapshotId();
         uint256 kdxStaked = stKdx.getKdxBalanceAt(_account, currentSnapshotId);
         uint256 tier = 0;
-        while(tier < kdxStakedTiers.length && kdxStaked >= kdxStakedTiers[tier]) {
+        while(tier < kdxStakedTiers.length && kdxStaked >= kdxStakedTiers[tier][0]) {
             tier ++;
         }
         return tier;
+    }
+
+    function getAllocationPoint(uint256 _tier) external view returns(uint256) {
+        require(_tier <= kdxStakedTiers.length, 'tier invalid');
+        if (_tier == 0) return 0;
+        return kdxStakedTiers[_tier - 1][1];
     }
 
     // Get tier from _snapshotIdFrom to _snapshotIdTo 
@@ -40,7 +54,7 @@ contract TierSystem is Ownable {
         uint256 to = _snapshotIdTo < currentSnapshotId ? _snapshotIdTo : currentSnapshotId;
         uint256 kdxStaked = _getAverageFrom(_account,_snapshotIdFrom, to);
         uint256 tier = 0;
-        while(tier < kdxStakedTiers.length && kdxStaked >= kdxStakedTiers[tier]) {
+        while(tier < kdxStakedTiers.length && kdxStaked >= kdxStakedTiers[tier][0]) {
             tier ++;
         }
         return tier;
@@ -61,7 +75,12 @@ contract TierSystem is Ownable {
         return averageBalance / (_snapshotIdTo - _snapshotIdFrom + 1);
     }
 
-    function getAverageFrom (address _account, uint256 _snapshotIdFrom, uint256 _snapshotIdTo) public view returns (uint256) {
+    function getAverageFrom (address _account, uint256 _snapshotIdFrom) public view returns (uint256) {
+        uint256 currentSnapshotId = stKdx.getCurrentSnapshotId();
+        return _getAverageFrom((_account), _snapshotIdFrom, currentSnapshotId);
+    }
+
+    function getAverageFromTo (address _account, uint256 _snapshotIdFrom, uint256 _snapshotIdTo) public view returns (uint256) {
         return _getAverageFrom((_account), _snapshotIdFrom, _snapshotIdTo);
     }
 }

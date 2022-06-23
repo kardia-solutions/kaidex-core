@@ -43,17 +43,12 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
     // Tier system
     ITierSystem public tierSystem;
 
-    // Tier's allocation
-    uint256[4] private _allocations = [
-        uint256(1000),
-        uint256(3000),
-        uint256(10000),
-        uint256(30000) 
-    ];
-
     // snapshot ids
     uint256 public snapshotFrom;
     uint256 public snapshotTo;
+
+    // Project multiplier
+    uint256 public multiplier;
 
     event Deposit(address indexed user, uint256 amount);
     event Harvest(
@@ -79,13 +74,14 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
         uint256 _raisingAmount,
         ITierSystem _tierSystem,
         uint256 _snapshotFrom,
-        uint256 _snapshotTo
+        uint256 _snapshotTo,
+        uint256 _multiplier
     ) public {
-        require(
-            _harvestTime >= _endTime &&
-            _endTime > _startTime &&
-            _startTime > block.timestamp
-        );
+        // require(
+        //     _harvestTime >= _endTime &&
+        //     _endTime > _startTime &&
+        //     _startTime > block.timestamp
+        // );
         buyToken = _buyToken;
         offeringToken = _offeringToken;
         startTime = _startTime;
@@ -97,20 +93,21 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
         tierSystem = _tierSystem;
         snapshotFrom = _snapshotFrom;
         snapshotTo = _snapshotTo;
+        multiplier = _multiplier;
     }
 
     modifier depositAllowed(uint256 _amount) {
-        require(
-            block.timestamp > startTime && block.timestamp < endTime,
-            "not raising time"
-        );
+        // require(
+        //     block.timestamp > startTime && block.timestamp < endTime,
+        //     "not raising time"
+        // );
         require(_amount > 0, "need _amount > 0");
         _;
     }
 
     modifier harvestAllowed() {
-        require(block.timestamp > harvestTime, "not harvest time");
-        require(userInfo[msg.sender].amount > 0, "have you participated?");
+        // require(block.timestamp > harvestTime, "not harvest time");
+        // require(userInfo[msg.sender].amount > 0, "have you participated?");
         require(!userInfo[msg.sender].claimed, "nothing to harvest");
         _;
     }
@@ -247,7 +244,7 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
         require(snapshotFrom > 0 && snapshotTo > snapshotFrom, "Snapshot id not set");
         uint256 tier = tierSystem.getTierFromTo(_account, snapshotFrom, snapshotTo);
         if (tier == 0) return 0;
-        return allocations(tier - 1);
+        return allocations(tier);
     }
 
     function getTier (address _account) external view returns (uint256) {
@@ -257,15 +254,23 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
     function getAllocation (address _account) external view returns (uint256) {
         uint256 tier = tierSystem.getTierFromTo(_account, snapshotFrom, snapshotTo);
         if (tier == 0) return 0;
-        return allocations(tier - 1);
+        return allocations(tier);
     }
 
-    function allocations(uint256 _index) view public returns (uint256) {
-        require(_index < _allocations.length);
+    function getAllocationPoint (address _account) external view returns (uint256) {
+        uint256 tier = tierSystem.getTierFromTo(_account, snapshotFrom, snapshotTo);
+        if (tier == 0) return 0;
+        return tierSystem.getAllocationPoint(tier);
+    }
+
+    function allocations(uint256 _tier) view public returns (uint256) {
+        uint256 _alloPoint = tierSystem.getAllocationPoint(_tier);
         if (buyToken == IERC20(address(0)) ) {
-            return _allocations[_index].mul(1e18);
+            // return _alloPoint.mul(multiplier).mul(1e18);
+            return _alloPoint.mul(multiplier);
         }
-        return _allocations[_index].mul(10 ** buyToken.decimals());
+        // return _alloPoint.mul(multiplier).mul(10 ** buyToken.decimals());
+        return _alloPoint.mul(multiplier);
     } 
 
     function harvest() public nonReentrant harvestAllowed whenNotPaused {

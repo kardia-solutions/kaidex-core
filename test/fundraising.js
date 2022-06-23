@@ -42,7 +42,7 @@ describe("Staking KAIDEX Token", function () {
     it("IDO work right!", async function () {
         // Rasie: 50K USDT
         // Offer Token: 50K BEAN
-        this.fundRaising = await this.FundRaising.deploy(this.usdt.address, this.bean.address, 0, 0, 0, "50000", "50000", this.tierSystem.address);
+        this.fundRaising = await this.FundRaising.deploy(this.usdt.address, this.bean.address, 0, 0, 0, "50000", "50000", this.tierSystem.address, 1, 7, 2);
         // Transfer bean to ido contract
         await this.bean.transfer(this.fundRaising.address, "50000")
         await this.kdx.approve(this.stKDX.address, "1000000000000000000");
@@ -63,11 +63,11 @@ describe("Staking KAIDEX Token", function () {
         await this.stKDX.snapshot();
         await this.stKDX.snapshot();
         await this.stKDX.snapshot();
-        expect(await this.tierSystem.getTier(this.alice.address, [1,2,3,4,5,6,7])).to.equal("4")
-        expect(await this.tierSystem.getTier(this.bob.address, [1,2,3,4,5,6,7])).to.equal("2")
-        expect(await this.tierSystem.getTier(this.carol.address, [1,2,3,4,5,6,7])).to.equal("3")
-        expect(await this.tierSystem.getTier(this.john.address, [1,2,3,4,5,6,7])).to.equal("3")
-        expect(await this.tierSystem.getTier(this.lew.address, [1,2,3,4,5,6,7])).to.equal("1")
+        expect(await this.tierSystem.getTier(this.alice.address)).to.equal("4")
+        expect(await this.tierSystem.getTier(this.bob.address)).to.equal("0")
+        expect(await this.tierSystem.getTier(this.carol.address)).to.equal("3")
+        expect(await this.tierSystem.getTier(this.john.address)).to.equal("3")
+        expect(await this.tierSystem.getTier(this.lew.address)).to.equal("2")
         
         // Approve raising token (kdx) to fundraising contract
         await this.usdt.approve(this.fundRaising.address, "1000000000000000000");
@@ -76,13 +76,11 @@ describe("Staking KAIDEX Token", function () {
         await this.usdt.connect(this.john).approve(this.fundRaising.address, "1000000000000000000", { from: this.john.address });
         await this.usdt.connect(this.lew).approve(this.fundRaising.address, "1000000000000000000", { from: this.lew.address });
 
-        // Set snapshot ids
-        await this.fundRaising.setSnapshotIds([1,2,3,4,5,6,7]);
-
         // Deposit
         await this.fundRaising.deposit("20000");
         await this.fundRaising.deposit("20000"); 
         const aliceInfo = await this.fundRaising.userInfo(this.alice.address);
+
         // // Allice's total deposite: 30K usdt
         expect(aliceInfo[0].toString()).to.equal("30000");
         expect(await this.fundRaising.totalAmount()).to.equal("30000");
@@ -158,7 +156,7 @@ describe("Staking KAIDEX Token", function () {
     it("IDO work right!!!!!", async function () {
         // Rasie: 20K USDT
         // Offer Token: 20K BEAN
-        this.fundRaising = await this.FundRaising.deploy(this.usdt.address, this.bean.address, 0, 0, 0, "20000", "20000", this.tierSystem.address);
+        this.fundRaising = await this.FundRaising.deploy(this.usdt.address, this.bean.address, 0, 0, 0, "20000", "20000", this.tierSystem.address, 1, 7, 2);
         // Transfer bean to ido contract
         await this.bean.transfer(this.fundRaising.address, "20000")
         await this.kdx.approve(this.stKDX.address, "1000000000000000000");
@@ -180,11 +178,11 @@ describe("Staking KAIDEX Token", function () {
         await this.stKDX.snapshot();
         await this.stKDX.snapshot();
 
-        expect(await this.tierSystem.getTier(this.alice.address, [1,2,3,4,5,6,7])).to.equal("4")
-        expect(await this.tierSystem.getTier(this.bob.address, [1,2,3,4,5,6,7])).to.equal("2")
-        expect(await this.tierSystem.getTier(this.carol.address, [1,2,3,4,5,6,7])).to.equal("3")
-        expect(await this.tierSystem.getTier(this.john.address, [1,2,3,4,5,6,7])).to.equal("3")
-        expect(await this.tierSystem.getTier(this.lew.address, [1,2,3,4,5,6,7])).to.equal("1")
+        expect(await this.tierSystem.getTier(this.alice.address)).to.equal("4")
+        expect(await this.tierSystem.getTier(this.bob.address)).to.equal("0")
+        expect(await this.tierSystem.getTier(this.carol.address)).to.equal("3")
+        expect(await this.tierSystem.getTier(this.john.address)).to.equal("3")
+        expect(await this.tierSystem.getTier(this.lew.address)).to.equal("2")
         
         // Approve raising token (kdx) to fundraising contract
         await this.usdt.approve(this.fundRaising.address, "1000000000000000000");
@@ -192,9 +190,6 @@ describe("Staking KAIDEX Token", function () {
         await this.usdt.connect(this.carol).approve(this.fundRaising.address, "1000000000000000000", { from: this.carol.address });
         await this.usdt.connect(this.john).approve(this.fundRaising.address, "1000000000000000000", { from: this.john.address });
         await this.usdt.connect(this.lew).approve(this.fundRaising.address, "1000000000000000000", { from: this.lew.address });
-
-        // Set snapshot ids
-        await this.fundRaising.setSnapshotIds([1,2,3,4,5,6,7]);
 
         // Deposit
         await this.fundRaising.deposit("20000");
@@ -204,9 +199,6 @@ describe("Staking KAIDEX Token", function () {
         expect(aliceInfo[0].toString()).to.equal("30000");
         expect(await this.fundRaising.totalAmount()).to.equal("30000");
         expect(await this.usdt.balanceOf(this.alice.address)).to.equal("20000");
-
-        // // Bob deposit fail
-        // await expect(this.fundRaising.connect(this.bob).deposit("20000")).to.be.revertedWith("not eligible amount!!")
 
         // Carol's total deposite: 10K usdt
         await this.fundRaising.connect(this.carol).deposit("20000");
@@ -274,13 +266,13 @@ describe("Staking KAIDEX Token", function () {
         await this.fundRaising.emergencyWithdraw(this.bean.address, this.dang.address);
         expect(await this.bean.balanceOf(this.dang.address)).to.equal("3");
         const getInfo = await this.fundRaising.getInfo()
-        console.log(getInfo.toString());
+        // console.log(getInfo.toString());
     })
 
     it("IDO using KAI native!!!!!", async function () {
         // Rasie: 20K USDT
         // Offer Token: 20K BEAN
-        this.fundRaising = await this.FundRaising.deploy("0x0000000000000000000000000000000000000000", this.bean.address, 0, 0, 0, "20000", "20000", this.tierSystem.address);
+        this.fundRaising = await this.FundRaising.deploy("0x0000000000000000000000000000000000000000", this.bean.address, 0, 0, 0, "20000", "20000", this.tierSystem.address, 1, 7, 2);
         // Transfer bean to ido contract
         await this.bean.transfer(this.fundRaising.address, "20000")
         await this.kdx.approve(this.stKDX.address, "1000000000000000000");
@@ -302,13 +294,12 @@ describe("Staking KAIDEX Token", function () {
         await this.stKDX.snapshot();
         await this.stKDX.snapshot();
 
-        expect(await this.tierSystem.getTier(this.alice.address, [1,2,3,4,5,6,7])).to.equal("4")
-        expect(await this.tierSystem.getTier(this.bob.address, [1,2,3,4,5,6,7])).to.equal("2")
-        expect(await this.tierSystem.getTier(this.carol.address, [1,2,3,4,5,6,7])).to.equal("3")
-        expect(await this.tierSystem.getTier(this.john.address, [1,2,3,4,5,6,7])).to.equal("3")
-        expect(await this.tierSystem.getTier(this.lew.address, [1,2,3,4,5,6,7])).to.equal("1")
-        // Set snapshot ids
-        await this.fundRaising.setSnapshotIds([1,2,3,4,5,6,7]);
+        expect(await this.tierSystem.getTier(this.alice.address)).to.equal("4")
+        expect(await this.tierSystem.getTier(this.bob.address)).to.equal("0")
+        expect(await this.tierSystem.getTier(this.carol.address)).to.equal("3")
+        expect(await this.tierSystem.getTier(this.john.address)).to.equal("3")
+        expect(await this.tierSystem.getTier(this.lew.address)).to.equal("2")
+
         // Deposit
         await this.fundRaising.deposit("20000", {value: "20000"});
         expect(await this.provider.getBalance(this.fundRaising.address)).to.equal("20000");
