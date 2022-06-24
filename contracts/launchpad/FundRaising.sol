@@ -47,7 +47,7 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
     uint256 public snapshotFrom;
     uint256 public snapshotTo;
 
-    // Project multiplier
+    // Project multiplier: 10000 ~ 1, 1000 ~ 0.1
     uint256 public multiplier;
 
     event Deposit(address indexed user, uint256 amount);
@@ -77,11 +77,11 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
         uint256 _snapshotTo,
         uint256 _multiplier
     ) public {
-        // require(
-        //     _harvestTime >= _endTime &&
-        //     _endTime > _startTime &&
-        //     _startTime > block.timestamp
-        // );
+        require(
+            _harvestTime >= _endTime &&
+            _endTime > _startTime &&
+            _startTime > block.timestamp
+        );
         buyToken = _buyToken;
         offeringToken = _offeringToken;
         startTime = _startTime;
@@ -97,17 +97,17 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
     }
 
     modifier depositAllowed(uint256 _amount) {
-        // require(
-        //     block.timestamp > startTime && block.timestamp < endTime,
-        //     "not raising time"
-        // );
+        require(
+            block.timestamp > startTime && block.timestamp < endTime,
+            "not raising time"
+        );
         require(_amount > 0, "need _amount > 0");
         _;
     }
 
     modifier harvestAllowed() {
-        // require(block.timestamp > harvestTime, "not harvest time");
-        // require(userInfo[msg.sender].amount > 0, "have you participated?");
+        require(block.timestamp > harvestTime, "not harvest time");
+        require(userInfo[msg.sender].amount > 0, "have you participated?");
         require(!userInfo[msg.sender].claimed, "nothing to harvest");
         _;
     }
@@ -266,12 +266,10 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
     function allocations(uint256 _tier) view public returns (uint256) {
         uint256 _alloPoint = tierSystem.getAllocationPoint(_tier);
         if (buyToken == IERC20(address(0)) ) {
-            // return _alloPoint.mul(multiplier).mul(1e18);
-            return _alloPoint.mul(multiplier);
+            return _alloPoint.mul(multiplier).mul(1e18).div(10000);
         }
-        // return _alloPoint.mul(multiplier).mul(10 ** buyToken.decimals());
-        return _alloPoint.mul(multiplier);
-    } 
+        return _alloPoint.mul(multiplier).mul(10 ** buyToken.decimals()).div(10000);
+    }
 
     function harvest() public nonReentrant harvestAllowed whenNotPaused {
         uint256 offeringTokenAmount = getOfferingAmount(msg.sender);

@@ -42,7 +42,7 @@ describe("Staking KAIDEX Token", function () {
     it("IDO work right!", async function () {
         // Rasie: 50K USDT
         // Offer Token: 50K BEAN
-        this.fundRaising = await this.FundRaising.deploy(this.usdt.address, this.bean.address, 0, 0, 0, "50000", "50000", this.tierSystem.address, 1, 7, 2);
+        this.fundRaising = await this.FundRaising.deploy(this.usdt.address, this.bean.address, 0, 0, 0, "50000", "50000", this.tierSystem.address, 1, 7, 20000);
         // Transfer bean to ido contract
         await this.bean.transfer(this.fundRaising.address, "50000")
         await this.kdx.approve(this.stKDX.address, "1000000000000000000");
@@ -156,7 +156,7 @@ describe("Staking KAIDEX Token", function () {
     it("IDO work right!!!!!", async function () {
         // Rasie: 20K USDT
         // Offer Token: 20K BEAN
-        this.fundRaising = await this.FundRaising.deploy(this.usdt.address, this.bean.address, 0, 0, 0, "20000", "20000", this.tierSystem.address, 1, 7, 2);
+        this.fundRaising = await this.FundRaising.deploy(this.usdt.address, this.bean.address, 0, 0, 0, "20000", "20000", this.tierSystem.address, 1, 7, 20000);
         // Transfer bean to ido contract
         await this.bean.transfer(this.fundRaising.address, "20000")
         await this.kdx.approve(this.stKDX.address, "1000000000000000000");
@@ -272,7 +272,7 @@ describe("Staking KAIDEX Token", function () {
     it("IDO using KAI native!!!!!", async function () {
         // Rasie: 20K USDT
         // Offer Token: 20K BEAN
-        this.fundRaising = await this.FundRaising.deploy("0x0000000000000000000000000000000000000000", this.bean.address, 0, 0, 0, "20000", "20000", this.tierSystem.address, 1, 7, 2);
+        this.fundRaising = await this.FundRaising.deploy("0x0000000000000000000000000000000000000000", this.bean.address, 0, 0, 0, "20000", "20000", this.tierSystem.address, 1, 7, 20000);
         // Transfer bean to ido contract
         await this.bean.transfer(this.fundRaising.address, "20000")
         await this.kdx.approve(this.stKDX.address, "1000000000000000000");
