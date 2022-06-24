@@ -22,11 +22,13 @@
     "deploy-masterchef": "npx hardhat run --network kai scripts/masterchef.js",
     "deploy-exchange": "npx hardhat run --network kai scripts/exchange.js",
     "deploy-ido": "npx hardhat run --network kai scripts/raisefund.js",
+    "deploy-kdx-ido": "npx hardhat run --network kai scripts/whitelist-ido.js",
     "test-masterchef": "npx hardhat test test/masterchef-test.js",
     "test-masterchefv2": "npx hardhat test test/masterchefv2-test.js",
     "test-stKdx": "npx hardhat test test/stKDX-test.js",
     "test-tier": "npx hardhat test test/tiersystem-test.js",
-    "test-ido": "npx hardhat test test/fundraising.js"
+    "test-ido": "npx hardhat test test/fundraising.js",
+    "test-whitelist-ido": "npx hardhat test test/whitelist-ido.js"
   },
   "dependencies": {
     "@boringcrypto/boring-solidity": "github:boringcrypto/BoringSolidity",

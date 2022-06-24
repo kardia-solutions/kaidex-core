@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers, waffle } = require("hardhat");
 
-describe("Staking KAIDEX Token", function () {
+describe("KAIDEX fund raising", function () {
     before(async function () {
         this.provider = waffle.provider;
         this.KaiDexToken = await ethers.getContractFactory("KaiDexToken")
