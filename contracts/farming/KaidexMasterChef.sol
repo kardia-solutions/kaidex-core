@@ -75,6 +75,10 @@ contract KaidexMasterChef is Ownable {
         uint256 lpSupply, 
         uint256 accKdxPerShare
     );
+    event UpdateKdxPerBlock (
+        uint256 _oldKdxPerblock,
+        uint256 _newKdxPerblock
+    );
 
     constructor(
         KaiDexToken _kdx,
@@ -92,9 +96,11 @@ contract KaidexMasterChef is Ownable {
     }
 
     // updateKdxPerBlock, can update the kdx per block only onwer can update this field
-    function updateKdxPerBlock(uint256 _kdxPerBlock) public onlyOwner {
+    function updateKdxPerBlock(uint256 _newKdxPerBlock) public onlyOwner {
         massUpdatePools();
-        kdxPerBlock = _kdxPerBlock;
+        uint256 _oldKdxPerblock = kdxPerBlock;
+        kdxPerBlock = _newKdxPerBlock;
+        emit UpdateKdxPerBlock(_oldKdxPerblock, kdxPerBlock);
     }
 
     // Add a new lp to the pool. Can only be called by the owner.
