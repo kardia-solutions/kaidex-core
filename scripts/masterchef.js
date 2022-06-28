@@ -5,10 +5,9 @@
 // Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 
-const kdx_token="0xf45b9D886421Dd06349d9De5069973d3a925C60A";
-const dev_address="0x5D94B6dA25A95067e0647bc8F6597823ea09162e";
-const kdx_per_block=10;
-const start_block=7957800;
+const kdx_token="0xDc9b08850CBBAb62aA13274af3F42737900342e3";
+const kdx_per_block="10000000000000000000";
+const start_block="8813000";
 
 
 async function main() {

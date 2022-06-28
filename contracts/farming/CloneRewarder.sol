@@ -80,7 +80,7 @@ contract CloneRewarder is IRewarder, Ownable {
         address _rewardToken,
         uint256 _rewardPerSecond,
         address _masterLpToken
-    ) public payable {
+    ) public payable onlyOwner {
         require(
             rewardToken == IERC20(address(0)),
             "Rewarder: already initialized"
