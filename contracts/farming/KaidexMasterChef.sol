@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../KaidexToken.sol";
-import "../interfaces/IRewarder.sol";
 
 contract KaidexMasterChef is Ownable {
 
@@ -46,10 +45,6 @@ contract KaidexMasterChef is Ownable {
     // The block number when KDX mining starts.
     uint256 public startBlock;
 
-    /// @notice Address of each `IRewarder` contract.
-    IRewarder[] public rewarder;
-
-
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(
@@ -60,14 +55,11 @@ contract KaidexMasterChef is Ownable {
     event LogPoolAddition(
         uint256 indexed pid, 
         uint256 allocPoint, 
-        IERC20 indexed lpToken, 
-        IRewarder indexed rewarder
+        IERC20 indexed lpToken
     );
     event LogSetPool(
         uint256 indexed pid, 
-        uint256 allocPoint, 
-        IRewarder indexed rewarder,
-        bool overwrite
+        uint256 allocPoint
     );
     event LogUpdatePool(
         uint256 indexed pid, 
@@ -108,7 +100,6 @@ contract KaidexMasterChef is Ownable {
     function add(
         uint256 _allocPoint,
         IERC20 _lpToken,
-        IRewarder _rewarder,
         bool _withUpdate
     ) public onlyOwner {
         if (_withUpdate) {
@@ -125,17 +116,14 @@ contract KaidexMasterChef is Ownable {
                 accKDXPerShare: 0
             })
         );
-        rewarder.push(_rewarder);
-        emit LogPoolAddition(poolInfo.length.sub(1), _allocPoint, _lpToken, _rewarder);
+        emit LogPoolAddition(poolInfo.length.sub(1), _allocPoint, _lpToken);
     }
 
     // Update the given pool's KDX allocation point or rewarder. Can only be called by the owner.
     function set(
         uint256 _pid,
         uint256 _allocPoint,
-        bool _withUpdate,
-        IRewarder _rewarder,
-        bool overwrite
+        bool _withUpdate
     ) public onlyOwner {
         if (_withUpdate) {
             massUpdatePools();
@@ -144,8 +132,7 @@ contract KaidexMasterChef is Ownable {
             _allocPoint
         );
         poolInfo[_pid].allocPoint = _allocPoint;
-        if (overwrite) { rewarder[_pid] = _rewarder; }
-        emit LogSetPool(_pid, _allocPoint, overwrite ? _rewarder : rewarder[_pid], overwrite);
+        emit LogSetPool(_pid, _allocPoint);
     }
 
     // Return reward multiplier over the given _from to _to block.
@@ -233,11 +220,6 @@ contract KaidexMasterChef is Ownable {
         );
         user.amount = user.amount.add(_amount);
         user.rewardDebt = user.amount.mul(pool.accKDXPerShare).div(1e12);
-        // Rewarder
-        IRewarder _rewarder = rewarder[_pid];
-        if (address(_rewarder) != address(0)) {
-            _rewarder.onKdxReward(_pid, userAddress, userAddress, pending, user.amount);
-        }
         emit Deposit(userAddress, _pid, _amount);
     }
 
@@ -265,11 +247,6 @@ contract KaidexMasterChef is Ownable {
         user.amount = user.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accKDXPerShare).div(1e12);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
-        // Rewarder
-        IRewarder _rewarder = rewarder[_pid];
-        if (address(_rewarder) != address(0)) {
-            _rewarder.onKdxReward(_pid, msg.sender, msg.sender, pending, user.amount);
-        }
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
@@ -282,10 +259,6 @@ contract KaidexMasterChef is Ownable {
         user.amount = 0;
         user.rewardDebt = 0;
         emit EmergencyWithdraw(msg.sender, _pid, user.amount);
-        IRewarder _rewarder = rewarder[_pid];
-        if (address(_rewarder) != address(0)) {
-            _rewarder.onKdxReward(_pid, msg.sender, msg.sender, 0, 0);
-        }
     }
 
     // Safe kdx transfer function, just in case if rounding error causes pool to not have enough KDXs.
