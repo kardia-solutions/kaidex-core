@@ -10,10 +10,11 @@ contract TierSystem is Ownable {
     IStKDX public stKdx;
     // Tier checking: 
     uint256[2][] public kdxStakedTiers = [
-        [uint256(1000 * 1e18), 500], // Silver
-        [uint256(3000 * 1e18), 1500],  // Platinum
-        [uint256(10000 * 1e18), 5000],  // Sapphire
-        [uint256(30000 * 1e18), 15000]  // Diamond
+        [uint256(200 * 1e18), 1], // Bronze
+        [uint256(800 * 1e18), 5],  // Silver    
+        [uint256(2500 * 1e18), 20],  // Gold    
+        [uint256(6000 * 1e18), 60],  // Platinum
+        [uint256(12000 * 1e18), 150]  // Diamond
     ];
 
     constructor(IStKDX _stKdx) {
