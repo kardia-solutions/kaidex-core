@@ -30,11 +30,15 @@
     "test-stKdx": "npx hardhat test test/stKDX-test.js",
     "test-tier": "npx hardhat test test/tiersystem-test.js",
     "test-ido": "npx hardhat test test/fundraising.js",
-    "test-whitelist-ido": "npx hardhat test test/whitelist-ido.js"
+    "test-whitelist-ido": "npx hardhat test test/whitelist-ido.js",
+    "flat-kdx": "./node_modules/.bin/poa-solidity-flattener ./contracts/KaidexToken.sol",
+    "flat-factory": "./node_modules/.bin/poa-solidity-flattener ./contracts/exchange/Factory.sol",
+    "flat-router": "./node_modules/.bin/poa-solidity-flattener ./contracts/exchange/KaiDexRouter.sol"
   },
   "dependencies": {
     "@boringcrypto/boring-solidity": "github:boringcrypto/BoringSolidity",
     "@openzeppelin/contracts": "4.5.0",
+    "@poanet/solidity-flattener": "^3.0.7",
     "dotenv": "^16.0.0"
   }
 }
