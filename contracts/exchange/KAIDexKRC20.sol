@@ -8,7 +8,7 @@ contract KAIDexKRC20 is IKAIDexKRC20 {
     using SafeMath for uint256;
 
     string public constant override name = "KAIDEX LPs";
-    string public constant override symbol = "KLP";
+    string public constant override symbol = "KDXLP";
     uint8 public constant override decimals = 18;
     uint256 public override totalSupply;
     mapping(address => uint256) public override balanceOf;

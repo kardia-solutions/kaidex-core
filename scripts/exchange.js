@@ -5,22 +5,22 @@
 // Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 
-const dev_address="0x98E683845ceDC6fc4a70065ee95777e07Bb1FF0D";
+const feeTosetter="0x0F5c21435895bB2f7044D0700281C05CbD500Dc9";
 const wkai_address="0xAF984E23EAA3E7967F3C5E007fbe397D8566D23d";
 
 async function main() {
 
   // Deploy Kaidex Factory
-  // const KaiDexFactory = await hre.ethers.getContractFactory("KaiDexFactory");
-  // const kaiDexFactory = await KaiDexFactory.deploy(dev_address);
-  // await kaiDexFactory.deployed();
-  // console.log("************ KAIDEX Factory deployed to:", kaiDexFactory.address);
+  const KaiDexFactory = await hre.ethers.getContractFactory("KaiDexFactory");
+  const kaiDexFactory = await KaiDexFactory.deploy(feeTosetter);
+  await kaiDexFactory.deployed();
+  console.log("************ KAIDEX Factory deployed to:", kaiDexFactory.address);
 
   // Deploy Kaidex v3 router
-  const KaiDexRouter = await hre.ethers.getContractFactory("KaiDexRouter");
-  const kaiDexRouter = await KaiDexRouter.deploy("0x6208a282a0Bb02db05211B6D15fE793419B70E5c", wkai_address);
-  await kaiDexRouter.deployed();
-  console.log("************ KAIDEX Router deployed to:", kaiDexRouter.address);
+  // const KaiDexRouter = await hre.ethers.getContractFactory("KaiDexRouter");
+  // const kaiDexRouter = await KaiDexRouter.deploy("0x73F9bF817c535c3156F76C8A19B603262D0d2251", wkai_address);
+  // await kaiDexRouter.deployed();
+  // console.log("************ KAIDEX Router deployed to:", kaiDexRouter.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
@@ -33,5 +33,5 @@ main()
   });
 
 
-// KAIDEX Factory deployed to: 0x6208a282a0Bb02db05211B6D15fE793419B70E5c
-// KAIDEX Router deployed to: 0x3CF950F3EEFA2daE3B076c493329241f844dDb09
+// KAIDEX Factory deployed to: 0x2e86a834Fa0546e6Dd41Bf3666727f84A5666d01
+// KAIDEX Router deployed to: 

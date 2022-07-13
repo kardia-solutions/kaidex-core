@@ -7,8 +7,8 @@ const hre = require("hardhat");
 
 const mcv2 = "0xcFc104b5f987De31f6C21856aFEbb03EfE3BB752";
 const reward_per_seconds = "10000000000000000"; // 0.01
-const reward_token = "0xDc9b08850CBBAb62aA13274af3F42737900342e3";  // KDX
-const lpToken = "0xfCA1d4E0b28c654eFc0313CE3558DFFCd1050154"
+const reward_token = "0xeabd4203d3b3794d336441e4ca6a5d97005e9a70";  // KDX
+const lpToken = "0xd1748252748d6c98655c8b2d80163c2116c73449"
 
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
@@ -17,7 +17,6 @@ async function main() {
   // If this script is run directly using `node` you may want to call compile
   // manually to make sure everything is compiled
   // await hre.run('compile');
-
   // We get the contract to deploy
   const CloneRewarder = await hre.ethers.getContractFactory("CloneRewarder");
   const cloneRewarder = await CloneRewarder.deploy(mcv2);
@@ -26,7 +25,7 @@ async function main() {
 
   console.log("cloneRewarder Token deployed to:", cloneRewarder.address);
   const mint = await cloneRewarder.init(reward_token, reward_per_seconds, lpToken)
-  console.log("Mint cloneRewarder token send to owner: ", mint.hash)
+  console.log("Init", mint.hash)
 }
 
 // We recommend this pattern to be able to use async/await everywhere
