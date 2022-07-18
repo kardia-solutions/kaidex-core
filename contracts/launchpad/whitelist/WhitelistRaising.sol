@@ -78,10 +78,15 @@ contract WhitelistRaising is ReentrancyGuard, Ownable, Pausable, Whitelist {
     }
 
     modifier harvestAllowed() {
-        // require(block.timestamp > harvestTime, "not harvest time");
+        require(block.timestamp > harvestTime, "not harvest time");
         require(userInfo[msg.sender].amount > 0, "have you participated?");
         require(!userInfo[msg.sender].claimed, "nothing to harvest");
         _;
+    }
+
+    function updateStartTime(uint256 _newTime) public onlyOwner {
+        require(_newTime > block.timestamp && _newTime < endTime, "time invalid!!");
+        startTime = _newTime;
     }
 
     function updateHarvestTime(uint256 _newTime) public onlyOwner {

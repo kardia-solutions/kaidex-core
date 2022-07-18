@@ -35,7 +35,8 @@
     "flat-factory": "npx hardhat flatten contracts/exchange/Factory.sol > flatten_files/Factory_flat.sol",
     "flat-router": "npx hardhat flatten contracts/exchange/KaiDexRouter.sol > flatten_files/KaidexRouter_flat.sol",
     "flat-stkdx": "npx hardhat flatten contracts/staking/stKDX.sol > flatten_files/stKDX_flat.sol",
-    "flat-migrate": "npx hardhat flatten contracts/exchange/KaiDexMigrate.sol > flatten_files/KaiDexMigrate_flat.sol"
+    "flat-migrate": "npx hardhat flatten contracts/exchange/KaiDexMigrate.sol > flatten_files/KaiDexMigrate_flat.sol",
+    "flat-kdxido": "npx hardhat flatten contracts/launchpad/whitelist/WhitelistRaising.sol > flatten_files/WhitelistRaising_flat.sol"
   },
   "dependencies": {
     "@boringcrypto/boring-solidity": "github:boringcrypto/BoringSolidity",

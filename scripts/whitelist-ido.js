@@ -5,14 +5,14 @@
 // Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 
-const _offeringToken = "0xc4a4ffa90379694b477b04ba66a5fecce5cddd25";  // KDX
-const _startTime = "1656062100";
-const _endTime = "1656063000";
-const _harvestTime = "1656063000"
-const _offeringAmount = "10000000000000000000";
-const _raisingAmount = "5000000000000000000";
-const _maxAllocation = "1000000000000000000";
-const _maxAddrWhitelist = 5;
+const _offeringToken = "0xA971434fc1a9730bB2448ebdAfA7EC25290857f5";  // KDX
+const _startTime = "1658134800";
+const _endTime = "1658135700";
+const _harvestTime = "1658136000"
+const _offeringAmount = "4000000000000000000000000";
+const _raisingAmount = "16000000000000000000000000";
+const _maxAllocation = "5333000000000000000000";
+const _maxAddrWhitelist = 3000;
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
@@ -46,4 +46,3 @@ main()
     process.exit(1);
   });
 
-  // FundRaising deployed to: 0xB8b177170deC5ecC647E87F37206f03321C5303d
