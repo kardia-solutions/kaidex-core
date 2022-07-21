@@ -12,8 +12,8 @@ contract KaidexMaker is Ownable {
     using SafeERC20 for IERC20;
 
     IKaiDexFactory public immutable factory;
-    address public immutable bar;
-    address public immutable kdx;
+    address public bar;
+    address public kdx;
     address public immutable wkai;
 
     mapping(address => address) internal _bridges;
@@ -40,6 +40,14 @@ contract KaidexMaker is Ownable {
         kdx = _kdx;
         wkai = _wkai;
         converter = msg.sender;
+    }
+
+    function setBar(address _bar) public onlyOwner {
+        bar = _bar;
+    }
+
+    function setKDX(address _kdx) public onlyOwner {
+        kdx = _kdx;
     }
 
     function bridgeFor(address token) public view returns (address bridge) {
@@ -116,6 +124,7 @@ contract KaidexMaker is Ownable {
         uint256 amount1
     ) internal returns (uint256 kdxOut) {
         // Interactions
+        require(bar != address(0), "bar is not set");
         if (token0 == token1) {
             uint256 amount = amount0.add(amount1);
             if (token0 == kdx) {
@@ -214,6 +223,7 @@ contract KaidexMaker is Ownable {
         internal
         returns (uint256 amountOut)
     {
+        require(bar != address(0), "bar is not set");
         amountOut = _swap(token, kdx, amountIn, bar);
     }
 
