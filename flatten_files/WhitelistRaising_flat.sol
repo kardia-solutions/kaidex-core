@@ -1507,8 +1507,6 @@ contract WhitelistRaising is ReentrancyGuard, Ownable, Pausable, Whitelist {
     mapping(address => UserInfo) public userInfo;
     // participators
     address[] public addressList;
-    // Maximum allocation per address
-    uint256 public maxAllocation;
 
     // Event
     event Deposit(address indexed user, uint256 amount);
@@ -1521,7 +1519,6 @@ contract WhitelistRaising is ReentrancyGuard, Ownable, Pausable, Whitelist {
         uint256 _harvestTime,
         uint256 _offeringAmount,
         uint256 _raisingAmount,
-        uint256 _maxAllocation,
         uint256 _maxAddrWhitelist
     ) public Whitelist(_maxAddrWhitelist) {
         require(
@@ -1536,7 +1533,6 @@ contract WhitelistRaising is ReentrancyGuard, Ownable, Pausable, Whitelist {
         offeringAmount = _offeringAmount;
         raisingAmount = _raisingAmount;
         totalAmount = 0;
-        maxAllocation = _maxAllocation;
     }
 
     modifier depositAllowed(uint256 _amount) {
@@ -1586,6 +1582,10 @@ contract WhitelistRaising is ReentrancyGuard, Ownable, Pausable, Whitelist {
         raisingAmount = _raisingAmount;
     }
 
+    function maxAllocation () view public returns (uint256) {
+        return raisingAmount.div(maximumAddrWhitelist);
+    } 
+
     function deposit(uint256 _amount)
         public
         payable
@@ -1595,10 +1595,10 @@ contract WhitelistRaising is ReentrancyGuard, Ownable, Pausable, Whitelist {
         onlyWhitelisted
     {
         require(
-            maxAllocation > userInfo[msg.sender].amount,
+            maxAllocation() > userInfo[msg.sender].amount,
             "not eligible amount!!"
         );
-        uint256 eligibleAmount = maxAllocation - userInfo[msg.sender].amount;
+        uint256 eligibleAmount = maxAllocation() - userInfo[msg.sender].amount;
         uint256 amount = _amount;
         if (eligibleAmount < _amount) {
             amount = eligibleAmount;
@@ -1606,7 +1606,8 @@ contract WhitelistRaising is ReentrancyGuard, Ownable, Pausable, Whitelist {
         require(msg.value >= amount, "amount not enough");
         if (msg.value > amount) {
             TransferHelper.safeTransferKAI(msg.sender, msg.value - amount);
-        }        if (userInfo[msg.sender].amount == 0) {
+        }        
+        if (userInfo[msg.sender].amount == 0) {
             addressList.push(address(msg.sender));
         }
         userInfo[msg.sender].amount = userInfo[msg.sender].amount.add(amount);

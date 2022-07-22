@@ -38,7 +38,8 @@
     "flat-migrate": "npx hardhat flatten contracts/exchange/KaiDexMigrate.sol > flatten_files/KaiDexMigrate_flat.sol",
     "flat-kdxido": "npx hardhat flatten contracts/launchpad/whitelist/WhitelistRaising.sol > flatten_files/WhitelistRaising_flat.sol",
     "flat-timelock": "npx hardhat flatten contracts/TokenTimelock.sol > flatten_files/TokenTimelock_flat.sol",
-    "flat-kaidexmaker": "npx hardhat flatten contracts/farming/KaidexMaker.sol > flatten_files/KaidexMaker_flat.sol"
+    "flat-kaidexmaker": "npx hardhat flatten contracts/farming/KaidexMaker.sol > flatten_files/KaidexMaker_flat.sol",
+    "flat-mc": "npx hardhat flatten contracts/farming/KaidexMasterChef.sol > flatten_files/KaidexMasterChef_flat.sol"
   },
   "dependencies": {
     "@boringcrypto/boring-solidity": "github:boringcrypto/BoringSolidity",

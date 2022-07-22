@@ -87,6 +87,11 @@ contract KaidexMasterChef is Ownable {
         return poolInfo.length;
     }
 
+    function updateStartBlock (uint256 _newStartBlock) public onlyOwner {
+        require(startBlock > block.number, "wrong time");
+        startBlock = _newStartBlock;
+    }
+
     // updateKdxPerBlock, can update the kdx per block only onwer can update this field
     function updateKdxPerBlock(uint256 _newKdxPerBlock) public onlyOwner {
         massUpdatePools();
