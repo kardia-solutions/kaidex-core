@@ -37,6 +37,9 @@ contract WhitelistRaising is ReentrancyGuard, Ownable, Pausable, Whitelist {
     // participators
     address[] public addressList;
 
+    // maximum wallet address
+    uint256 public maximumAddress;
+
     // Event
     event Deposit(address indexed user, uint256 amount);
     event Harvest(address indexed user, uint256 offeringAmount);
@@ -48,8 +51,8 @@ contract WhitelistRaising is ReentrancyGuard, Ownable, Pausable, Whitelist {
         uint256 _harvestTime,
         uint256 _offeringAmount,
         uint256 _raisingAmount,
-        uint256 _maxAddrWhitelist
-    ) public Whitelist(_maxAddrWhitelist) {
+        uint256 _maxAddr
+    ) public {
         require(
             _harvestTime >= _endTime &&
             _endTime > _startTime &&
@@ -61,6 +64,7 @@ contract WhitelistRaising is ReentrancyGuard, Ownable, Pausable, Whitelist {
         harvestTime = _harvestTime;
         offeringAmount = _offeringAmount;
         raisingAmount = _raisingAmount;
+        maximumAddress= _maxAddr;
         totalAmount = 0;
     }
 
@@ -70,6 +74,7 @@ contract WhitelistRaising is ReentrancyGuard, Ownable, Pausable, Whitelist {
             "not raising time"
         );
         require(_amount > 0, "need _amount > 0");
+        require(addressList.length < maximumAddress, "full");
         _;
     }
 
@@ -112,7 +117,7 @@ contract WhitelistRaising is ReentrancyGuard, Ownable, Pausable, Whitelist {
     }
 
     function maxAllocation () view public returns (uint256) {
-        return raisingAmount.div(maximumAddrWhitelist);
+        return raisingAmount.div(maximumAddress);
     } 
 
     function deposit(uint256 _amount)
@@ -121,7 +126,6 @@ contract WhitelistRaising is ReentrancyGuard, Ownable, Pausable, Whitelist {
         nonReentrant
         depositAllowed(_amount)
         whenNotPaused
-        onlyWhitelisted
     {
         require(
             maxAllocation() > userInfo[msg.sender].amount,

@@ -7,19 +7,7 @@ contract Whitelist is Ownable {
     event WhitelistedAddressAdded(address addr);
     event WhitelistedAddressRemoved(address addr);
     uint256 public totalAddress;
-    uint256 public maximumAddrWhitelist;
-
-    constructor (uint256 _maximumAddr) {
-        maximumAddrWhitelist = _maximumAddr;
-    }
-    /**
-     * @dev Throws if called by any account that's not whitelisted.
-     */
-    modifier onlyWhitelisted() {
-        require(whitelist[msg.sender], "not whitelisted");
-        _;
-    }
-
+    
     /***
      * @dev add an address to the whitelist
      * @param addr address
@@ -30,7 +18,6 @@ contract Whitelist is Ownable {
         onlyOwner
         returns (bool success)
     {
-        require(maximumAddrWhitelist > totalAddress, 'full');
         if (!whitelist[addr]) {
             whitelist[addr] = true;
             emit WhitelistedAddressAdded(addr);
