@@ -7,14 +7,15 @@ const hre = require("hardhat");
 
 const _buyToken = "0xeabd4203d3b3794d336441e4ca6a5d97005e9a70"; // USDT
 const _offeringToken = "0xc4A4fFA90379694B477B04BA66A5feCce5CDdd25";  // KDX
-const _startTime = "1655102741";
-const _endTime = "1655697562";
-const _harvestTime = "1655697562"
+const _startTime = "1658998500";
+const _endTime = "1659084900";
+const _harvestTime = "1659084900"
 const _offeringAmount = "100000000000000000000000";
 const _raisingAmount = "100000000000";
-const _tier = "0xBC6b92D6212D3775aF97A2E56A03e087fd31dc79"
+const _tier = "0xae55DDcB96eD5b00BAdbaAd581f6491a8298CB13"
 const _snapshotForm = 0;
 const _snapshotTo = 1
+const _multiplier = 10000;
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
@@ -35,6 +36,7 @@ async function main() {
     _tier,
     _snapshotForm,
     _snapshotTo,
+    _multiplier,
     { gasLimit: 30000000 });
   await fundRaising.deployed();
   console.log("FundRaising deployed to:", fundRaising.address);
