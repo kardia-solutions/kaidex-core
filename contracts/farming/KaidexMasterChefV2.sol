@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../libraries/BoringMath.sol";
 import "../libraries/SignedSafeMath.sol";
 import "../interfaces/IRewarder.sol";
@@ -14,7 +15,7 @@ import "../interfaces/IMasterChef.sol";
 /// The idea for this MasterChef V2 (MCV2) contract is therefore to be the owner of a dummy token
 /// that is deposited into the MasterChef V1 (MCV1) contract.
 /// The allocation point for this pool on MCV1 is the total allocation point for all pools that receive double incentives.
-contract KaidexMasterChefV2 is Ownable {
+contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
     using SafeERC20 for IERC20;
@@ -239,7 +240,7 @@ contract KaidexMasterChefV2 is Ownable {
         uint256 pid,
         uint256 amount,
         address to
-    ) public {
+    ) public nonReentrant {
         harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][to];
@@ -263,7 +264,7 @@ contract KaidexMasterChefV2 is Ownable {
         uint256 pid,
         uint256 amount,
         address to
-    ) public {
+    ) public nonReentrant {
         harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
@@ -282,7 +283,7 @@ contract KaidexMasterChefV2 is Ownable {
     /// @notice Harvest proceeds for transaction sender to `to`.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param to Receiver of KDX rewards.
-    function harvest(uint256 pid, address to) public {
+    function harvest(uint256 pid, address to) public nonReentrant {
         harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
@@ -309,7 +310,7 @@ contract KaidexMasterChefV2 is Ownable {
         uint256 pid,
         uint256 amount,
         address to
-    ) public {
+    ) public nonReentrant {
         harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
@@ -340,7 +341,7 @@ contract KaidexMasterChefV2 is Ownable {
     /// @notice Withdraw without caring about rewards. EMERGENCY ONLY.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param to Receiver of the LP tokens.
-    function emergencyWithdraw(uint256 pid, address to) public {
+    function emergencyWithdraw(uint256 pid, address to) public nonReentrant {
         UserInfo storage user = userInfo[pid][msg.sender];
         uint256 amount = user.amount;
         user.amount = 0;
@@ -350,7 +351,6 @@ contract KaidexMasterChefV2 is Ownable {
         if (address(_rewarder) != address(0)) {
             _rewarder.onKdxReward(pid, msg.sender, to, 0, 0);
         }
-
         // Note: transfer can fail or succeed if `amount` is zero.
         lpToken[pid].safeTransfer(to, amount);
         emit EmergencyWithdraw(msg.sender, pid, amount, to);
