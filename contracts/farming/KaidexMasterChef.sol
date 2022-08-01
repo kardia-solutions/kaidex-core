@@ -82,6 +82,14 @@ contract KaidexMasterChef is Ownable {
         startBlock = _startBlock;
     }
 
+    modifier checkPoolDuplicate(IERC20 _lpToken) {
+        uint256 length = poolInfo.length;
+        for (uint256 pid = 0; pid < length; pid++) {
+            require(poolInfo[pid].lpToken != _lpToken, "add: axisting pools.");
+        }
+        _;
+    }
+
 
     function poolLength() external view returns (uint256) {
         return poolInfo.length;
@@ -106,7 +114,7 @@ contract KaidexMasterChef is Ownable {
         uint256 _allocPoint,
         IERC20 _lpToken,
         bool _withUpdate
-    ) public onlyOwner {
+    ) public onlyOwner checkPoolDuplicate(_lpToken) {
         if (_withUpdate) {
             massUpdatePools();
         }
