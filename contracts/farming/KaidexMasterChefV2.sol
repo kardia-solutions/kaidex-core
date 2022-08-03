@@ -275,8 +275,13 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
             _rewarder.onKdxReward(pid, msg.sender, to, 0, user.amount);
-        }
+        }        
+        // lp's balance before tranfer action
+        uint256 _before = lpToken[pid].balanceOf(address(this));
         lpToken[pid].safeTransfer(to, amount);
+        // lp's balance after tranfer
+        uint256 _after = lpToken[pid].balanceOf(address(this));
+        require(_before == _after.add(amount), "withdraw: not deflation");
         emit Withdraw(msg.sender, pid, amount, to);
     }
 
@@ -327,8 +332,13 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
             _rewarder.onKdxReward(pid, msg.sender, to, _pendingKdx, user.amount);
-        }
+        }        
+        // lp's balance before tranfer action
+        uint256 _before = lpToken[pid].balanceOf(address(this));
         lpToken[pid].safeTransfer(to, amount);
+        // lp's balance after tranfer
+        uint256 _after = lpToken[pid].balanceOf(address(this));
+        require(_before == _after.add(amount), "withdrawAndHarvest: not deflation");
         emit Withdraw(msg.sender, pid, amount, to);
         emit Harvest(msg.sender, pid, _pendingKdx);
     }
@@ -352,7 +362,12 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
             _rewarder.onKdxReward(pid, msg.sender, to, 0, 0);
         }
         // Note: transfer can fail or succeed if `amount` is zero.
+        // lp's balance before tranfer action
+        uint256 _before = lpToken[pid].balanceOf(address(this));
         lpToken[pid].safeTransfer(to, amount);
+        // lp's balance after tranfer
+        uint256 _after = lpToken[pid].balanceOf(address(this));
+        require(_before == _after.add(amount), "emergencyWithdraw: not deflation");
         emit EmergencyWithdraw(msg.sender, pid, amount, to);
     }
 }

@@ -260,7 +260,12 @@ contract KaidexMasterChef is Ownable, ReentrancyGuard {
         safeKDXTransfer(msg.sender, pending);
         user.amount = user.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accKDXPerShare).div(1e12);
+        // lp's balance before tranfer action
+        uint256 _before = pool.lpToken.balanceOf(address(this));
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
+        // lp's balance after tranfer
+        uint256 _after = pool.lpToken.balanceOf(address(this));
+        require(_before == _after.add(_amount), "withdraw: not deflation");
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
@@ -270,7 +275,12 @@ contract KaidexMasterChef is Ownable, ReentrancyGuard {
         UserInfo storage user = userInfo[_pid][msg.sender];
         user.amount = 0;
         user.rewardDebt = 0;
+        // lp's balance before tranfer action
+        uint256 _before = pool.lpToken.balanceOf(address(this));
         pool.lpToken.safeTransfer(address(msg.sender), user.amount);
+        // lp's balance after tranfer
+        uint256 _after = pool.lpToken.balanceOf(address(this));
+        require(_before == _after.add(user.amount), "emergencyWithdraw: not deflation");
         emit EmergencyWithdraw(msg.sender, _pid, user.amount);
     }
 
