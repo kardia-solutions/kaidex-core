@@ -38,6 +38,8 @@ contract KaiDexRouter is IKaiDexRouter {
         uint256 amountAMin,
         uint256 amountBMin
     ) internal virtual returns (uint256 amountA, uint256 amountB) {
+        require(amountADesired >= amountAMin);
+        require(amountBDesired >= amountBMin);
         // create the pair if it doesn't exist yet
         if (IKaiDexFactory(factory).getPair(tokenA, tokenB) == address(0)) {
             IKaiDexFactory(factory).createPair(tokenA, tokenB);

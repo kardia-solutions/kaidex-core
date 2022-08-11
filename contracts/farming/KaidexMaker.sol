@@ -89,6 +89,7 @@ contract KaidexMaker is Ownable {
     ) external onlyConverter() {
         // TODO: This can be optimized a fair bit, but this is safer and simpler for now
         uint256 len = token0.length;
+        require(token0.length == token1.length);
         for (uint256 i = 0; i < len; i++) {
             _convert(token0[i], token1[i]);
         }
@@ -107,13 +108,14 @@ contract KaidexMaker is Ownable {
         if (token0 != pair.token0()) {
             (amount0, amount1) = (amount1, amount0);
         }
+        uint256 kdxAmount = _convertStep(token0, token1, amount0, amount1);
         emit LogConvert(
             msg.sender,
             token0,
             token1,
             amount0,
             amount1,
-            _convertStep(token0, token1, amount0, amount1)
+            kdxAmount
         );
     }
     

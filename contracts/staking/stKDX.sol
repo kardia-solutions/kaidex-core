@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract StKDX is ERC20Snapshot, Ownable {
     using SafeMath for uint256;
     IERC20 public kdx;
+    uint public constant MINIMUM_LIQUIDITY = 10**3;
 
     mapping(uint256 => uint256) _ratios;
 
@@ -37,6 +38,9 @@ contract StKDX is ERC20Snapshot, Ownable {
         uint256 totalKdx = kdx.balanceOf(address(this));
         // Gets the amount of stKDX in existence
         uint256 totalShares = totalSupply();
+        if (totalShares == 0) {
+            _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
+        }
         // If no stKDX exists, mint it 1:1 to the amount put in
         if (totalShares == 0 || totalKdx == 0) {
             _mint(msg.sender, _amount);
