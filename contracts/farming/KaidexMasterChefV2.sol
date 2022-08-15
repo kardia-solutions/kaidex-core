@@ -252,7 +252,12 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         if (address(_rewarder) != address(0)) {
             _rewarder.onKdxReward(pid, to, to, 0, user.amount);
         }
+         // lp's balance before tranfer action
+        uint256 _before = lpToken[pid].balanceOf(address(this));
         lpToken[pid].safeTransferFrom(msg.sender, address(this), amount);
+        // lp's balance after tranfer
+        uint256 _after = lpToken[pid].balanceOf(address(this));
+        require(_before == _after.add(amount), "deposit: not deflation");
         emit Deposit(msg.sender, pid, amount, to);
     }
 
