@@ -227,11 +227,18 @@ contract KaidexMasterChef is Ownable, ReentrancyGuard {
                 );
             safeKDXTransfer(userAddress, pending);
         } 
+        
+        // lp's balance before tranfer action
+        uint256 _before = pool.lpToken.balanceOf(address(this));
         pool.lpToken.safeTransferFrom(
             address(userAddress),
             address(this),
             _amount
         );
+        // lp's balance after tranfer
+        uint256 _after = pool.lpToken.balanceOf(address(this));
+        require(_before == _after.add(_amount), "deposit: not deflation");
+
         user.amount = user.amount.add(_amount);
         user.rewardDebt = user.amount.mul(pool.accKDXPerShare).div(1e12);
         emit Deposit(userAddress, _pid, _amount);
