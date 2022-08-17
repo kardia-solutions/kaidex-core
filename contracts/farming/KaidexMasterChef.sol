@@ -6,9 +6,10 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../KaidexToken.sol";
 
-contract KaidexMasterChef is Ownable {
+contract KaidexMasterChef is Ownable, ReentrancyGuard {
 
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -82,6 +83,14 @@ contract KaidexMasterChef is Ownable {
         startBlock = _startBlock;
     }
 
+    modifier checkPoolDuplicate(IERC20 _lpToken) {
+        uint256 length = poolInfo.length;
+        for (uint256 pid = 0; pid < length; pid++) {
+            require(poolInfo[pid].lpToken != _lpToken, "add: axisting pools.");
+        }
+        _;
+    }
+
 
     function poolLength() external view returns (uint256) {
         return poolInfo.length;
@@ -106,7 +115,7 @@ contract KaidexMasterChef is Ownable {
         uint256 _allocPoint,
         IERC20 _lpToken,
         bool _withUpdate
-    ) public onlyOwner {
+    ) public onlyOwner checkPoolDuplicate(_lpToken) {
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -218,28 +227,35 @@ contract KaidexMasterChef is Ownable {
                 );
             safeKDXTransfer(userAddress, pending);
         } 
+        
+        // lp's balance before tranfer action
+        uint256 _before = pool.lpToken.balanceOf(address(this));
         pool.lpToken.safeTransferFrom(
             address(userAddress),
             address(this),
             _amount
         );
+        // lp's balance after tranfer
+        uint256 _after = pool.lpToken.balanceOf(address(this));
+        require(_before == _after.add(_amount), "deposit: not deflation");
+
         user.amount = user.amount.add(_amount);
         user.rewardDebt = user.amount.mul(pool.accKDXPerShare).div(1e12);
         emit Deposit(userAddress, _pid, _amount);
     }
 
     // Deposit LP tokens to MasterChef for KDX allocation.
-    function deposit(uint256 _pid, uint256 _amount) public {
+    function deposit(uint256 _pid, uint256 _amount) public nonReentrant {
         _deposit(_pid, _amount, msg.sender);
     }
 
     // Harvest KDX rewards from MasterChef pools.
-    function harvest(uint256 _pid) public {
+    function harvest(uint256 _pid) public nonReentrant {
         _deposit(_pid, 0, msg.sender);
     }
 
     // Withdraw LP tokens from MasterChef.
-    function withdraw(uint256 _pid, uint256 _amount) public {
+    function withdraw(uint256 _pid, uint256 _amount) public nonReentrant {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
@@ -251,18 +267,27 @@ contract KaidexMasterChef is Ownable {
         safeKDXTransfer(msg.sender, pending);
         user.amount = user.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accKDXPerShare).div(1e12);
+        // lp's balance before tranfer action
+        uint256 _before = pool.lpToken.balanceOf(address(this));
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
+        // lp's balance after tranfer
+        uint256 _after = pool.lpToken.balanceOf(address(this));
+        require(_before == _after.add(_amount), "withdraw: not deflation");
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
-    function emergencyWithdraw(uint256 _pid) public {
+    function emergencyWithdraw(uint256 _pid) public nonReentrant {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-
-        pool.lpToken.safeTransfer(address(msg.sender), user.amount);
         user.amount = 0;
         user.rewardDebt = 0;
+        // lp's balance before tranfer action
+        uint256 _before = pool.lpToken.balanceOf(address(this));
+        pool.lpToken.safeTransfer(address(msg.sender), user.amount);
+        // lp's balance after tranfer
+        uint256 _after = pool.lpToken.balanceOf(address(this));
+        require(_before == _after.add(user.amount), "emergencyWithdraw: not deflation");
         emit EmergencyWithdraw(msg.sender, _pid, user.amount);
     }
 
