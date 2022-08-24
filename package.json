@@ -41,7 +41,8 @@
     "flat-kaidexmaker": "npx hardhat flatten contracts/farming/KaidexMaker.sol > flatten_files/KaidexMaker_flat.sol",
     "flat-mc": "npx hardhat flatten contracts/farming/KaidexMasterChef.sol > flatten_files/KaidexMasterChef_flat.sol",
     "flat-tier": "npx hardhat flatten contracts/launchpad/tier/TierSystem.sol > flatten_files/TierSystem_flat.sol",
-    "flat-tier-ido": "npx hardhat flatten contracts/launchpad/tier/FundRaising.sol > flatten_files/FundRaising_flat.sol"
+    "flat-tier-ido": "npx hardhat flatten contracts/launchpad/tier/FundRaising.sol > flatten_files/FundRaising_flat.sol",
+    "flat-trans-swapper": "npx hardhat flatten contracts/crosschain-swap/TransferSwapper.sol > flatten_files/TransferSwapper_flat.sol"
   },
   "dependencies": {
     "@boringcrypto/boring-solidity": "github:boringcrypto/BoringSolidity",

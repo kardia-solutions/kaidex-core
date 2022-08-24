@@ -1507,6 +1507,9 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
         snapshotTo = id;
     }
 
+    function setMultiplier (uint256 mul) public onlyOwner {
+        multiplier = mul;
+    }
 
     function updateHarvestTime(uint256 _newTime) public onlyOwner {
         require(
