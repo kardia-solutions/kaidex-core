@@ -99,9 +99,9 @@
           "type": "address"
         },
         {
-          "internalType": "bytes4",
-          "name": "_selector",
-          "type": "bytes4"
+          "internalType": "string",
+          "name": "_supportedFuncs",
+          "type": "string"
         },
         {
           "internalType": "bool",

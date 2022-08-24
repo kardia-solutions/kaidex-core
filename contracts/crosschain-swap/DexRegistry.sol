@@ -18,11 +18,12 @@ abstract contract DexRegistry is Ownable {
 
     function setSupportedDex(
         address _dex,
-        bytes4 _selector,
+        string memory _supportedFuncs,
         bool _enabled
     ) external onlyOwner {
-        _setSupportedDex(_dex, _selector, _enabled);
-        emit SupportedDexUpdated(_dex, _selector, _enabled);
+        bytes4 selector = bytes4(keccak256(bytes(_supportedFuncs)));
+        _setSupportedDex(_dex, selector, _enabled);
+        emit SupportedDexUpdated(_dex, selector, _enabled);
     }
 
     function _setSupportedDex(
