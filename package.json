@@ -44,6 +44,7 @@
     "flat-tier": "npx hardhat flatten contracts/launchpad/tier/TierSystem.sol > flatten_files/TierSystem_flat.sol",
     "flat-tier-ido": "npx hardhat flatten contracts/launchpad/tier/FundRaising.sol > flatten_files/FundRaising_flat.sol",
     "flat-trans-swapper": "npx hardhat flatten contracts/crosschain-swap/TransferSwapper.sol > flatten_files/TransferSwapper_flat.sol",
+    "flat-anyswap-adapter": "npx hardhat flatten contracts/crosschain-swap/bridge/AnyswapAdapter.sol > flatten_files/AnyswapAdapter_flat.sol",
     "flat-erc721-market": "npx hardhat flatten contracts/nft-marketplace/ERC721NFTMarket.sol > flatten_files/ERC721NFTMarket_flat.sol"
   },
   "dependencies": {
