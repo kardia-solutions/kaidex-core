@@ -202,6 +202,12 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
         raisingAmount = _raisingAmount;
     }
 
+    function updateOfferingToken (address _newToken) public onlyOwner {
+        require(_newToken != address(0), "no");
+        offeringToken = ERC20(_newToken);
+    } 
+
+
     function deposit(uint256 _amount)
         public
         payable
@@ -322,7 +328,7 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
         }
         uint256 allocation = getUserAllocation(_user);
         uint256 payAmount = raisingAmount.mul(allocation).div(1e18);
-        return userInfo[_user].amount.sub(payAmount);
+        return userInfo[_user].amount.sub(payAmount).sub(10000);
     }
 
     function getAddressListLength() external view returns (uint256) {
@@ -331,11 +337,13 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
 
     function finalWithdraw(address _destination) public onlyOwner {
         if (buyToken == IERC20(address(0))) {
-            TransferHelper.safeTransferKAI(_destination, address(this).balance);
+            uint256 _withdraw = address(this).balance < raisingAmount ? address(this).balance : raisingAmount;
+            TransferHelper.safeTransferKAI(_destination, _withdraw);
         } else {
+            uint256 _withdraw = buyToken.balanceOf(address(this)) < raisingAmount ? buyToken.balanceOf(address(this)) : raisingAmount;
             buyToken.safeTransfer(
                 address(_destination),
-                buyToken.balanceOf(address(this))
+                _withdraw
             );
         }
     }
@@ -361,4 +369,6 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
     function unpause() public onlyOwner {
         _unpause();
     }
+
+    fallback () external payable{}
 }
