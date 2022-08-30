@@ -9,7 +9,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IMasterChefV2 {
     function lpToken(uint256 pid) external view returns (IERC20 _lpToken);
+    function getTotalDepositAmount(uint256 pid) external view returns(uint256);
 }
+
 
 contract CloneRewarder is IRewarder, Ownable {
     using BoringMath for uint256;
@@ -44,6 +46,8 @@ contract CloneRewarder is IRewarder, Ownable {
     uint256 private constant ACC_TOKEN_PRECISION = 1e12;
     address public immutable MASTERCHEF_V2;
     uint256 internal unlocked;
+    uint256 public startRewardTime;
+    uint256 public endRewardTime;
 
     modifier lock() {
         require(unlocked == 1, "LOCKED");
@@ -79,7 +83,9 @@ contract CloneRewarder is IRewarder, Ownable {
     function init(
         address _rewardToken,
         uint256 _rewardPerSecond,
-        address _masterLpToken
+        address _masterLpToken,
+        uint256 _startRewardTime,
+        uint256 _endRewardTime
     ) public payable onlyOwner {
         require(
             rewardToken == IERC20(address(0)),
@@ -89,8 +95,16 @@ contract CloneRewarder is IRewarder, Ownable {
         rewardPerSecond = _rewardPerSecond;
         masterLpToken = IERC20(_masterLpToken);
         require(rewardToken != IERC20(address(0)), "Rewarder: bad token");
+        require(_startRewardTime > block.timestamp && _endRewardTime > _startRewardTime, "bad time");
+        startRewardTime = _startRewardTime;
+        endRewardTime = _endRewardTime;
         unlocked = 1;
         emit LogInit(rewardToken, owner(), rewardPerSecond, masterLpToken);
+    }
+
+    function updateEndRewardTime (uint256 _endRewardTime) public onlyOwner {
+        require(_endRewardTime > block.timestamp, "bad time");
+        endRewardTime = _endRewardTime;
     }
 
     function onKdxReward(
@@ -193,11 +207,10 @@ contract CloneRewarder is IRewarder, Ownable {
         PoolInfo memory pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accToken1PerShare = pool.accToken1PerShare;
-        uint256 lpSupply = IMasterChefV2(MASTERCHEF_V2).lpToken(_pid).balanceOf(
-            MASTERCHEF_V2
-        );
+        uint256 lpSupply = IMasterChefV2(MASTERCHEF_V2).getTotalDepositAmount(_pid);
         if (block.timestamp > pool.lastRewardTime && lpSupply != 0) {
-            uint256 time = block.timestamp.sub(pool.lastRewardTime);
+            uint256 acceptTime = (endRewardTime > 0 && block.timestamp > endRewardTime) ? endRewardTime : block.timestamp;
+            uint256 time = acceptTime.sub(pool.lastRewardTime);
             uint256 kdxReward = time.mul(rewardPerSecond);
             accToken1PerShare = accToken1PerShare.add(
                 kdxReward.mul(ACC_TOKEN_PRECISION) / lpSupply
@@ -214,18 +227,19 @@ contract CloneRewarder is IRewarder, Ownable {
     function updatePool(uint256 pid) public returns (PoolInfo memory pool) {
         pool = poolInfo[pid];
         if (block.timestamp > pool.lastRewardTime) {
-            uint256 lpSupply = IMasterChefV2(MASTERCHEF_V2)
-                .lpToken(pid)
-                .balanceOf(MASTERCHEF_V2);
-
-            if (lpSupply > 0) {
-                uint256 time = block.timestamp.sub(pool.lastRewardTime);
+            uint256 lpSupply = IMasterChefV2(MASTERCHEF_V2).getTotalDepositAmount(pid);
+            uint256 acceptTime = block.timestamp;
+            if (endRewardTime > 0 && block.timestamp > endRewardTime) {
+                acceptTime = endRewardTime;
+            }
+            if (lpSupply > 0 && acceptTime > pool.lastRewardTime) {
+                uint256 time = acceptTime.sub(pool.lastRewardTime);
                 uint256 kdxReward = time.mul(rewardPerSecond);
                 pool.accToken1PerShare = pool.accToken1PerShare.add(
                     (kdxReward.mul(ACC_TOKEN_PRECISION) / lpSupply).to128()
                 );
             }
-            pool.lastRewardTime = block.timestamp.to64();
+            pool.lastRewardTime = block.timestamp < startRewardTime ? startRewardTime.to64() : acceptTime.to64();
             poolInfo[pid] = pool;
             emit LogUpdatePool(
                 pid,

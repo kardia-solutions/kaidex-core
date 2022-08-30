@@ -5,9 +5,9 @@
 // Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 
-const masterchef="0x1bc8FaF3F74939b3961F6ceB053EE43297b11BD9";
-const masterpool=1;
-const kdx_token="0xDc9b08850CBBAb62aA13274af3F42737900342e3";
+const masterchef="0x180855C7aee89DC35E4eC6e7485945CD0f619A8B";
+const masterpool=3;
+const kdx_token="0x510089A77bC55AfA93AA08ACa7CC4902998235AE";
 
 
 async function main() {

@@ -5,7 +5,7 @@
 // Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 
-const owner = "0x5D94B6dA25A95067e0647bc8F6597823ea09162e"
+const mcv2 = "0x5319EE6f4A380b4FeeB01AE1eE3D0be1F57bC21b"
 
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
@@ -18,11 +18,11 @@ async function main() {
   // We get the contract to deploy
   const DummyToken = await hre.ethers.getContractFactory("DummyToken");
   const dummyToken = await DummyToken.deploy();
-
   await dummyToken.deployed();
+  // Create the first pool
+  const approve = await dummyToken.approve(mcv2, "1000000000000000000000000000000000")
+  console.log("approve", approve.hash)
   console.log("Dummy Token deployed to:", dummyToken.address);
-  const mint = await dummyToken.mint(owner, "1000000000000000000000")
-  console.log("Mint dummy token send to owner: ", mint.hash)
 }
 
 // We recommend this pattern to be able to use async/await everywhere

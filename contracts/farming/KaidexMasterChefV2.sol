@@ -138,8 +138,12 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
     function add(
         uint256 allocPoint,
         IERC20 _lpToken,
-        IRewarder _rewarder
+        IRewarder _rewarder,
+        bool _withUpdate
     ) public onlyOwner {
+        if (_withUpdate) {
+            massUpdatePools();
+        }
         uint256 lastRewardBlock = block.number;
         totalAllocPoint = totalAllocPoint.add(allocPoint);
         lpToken.push(_lpToken);
@@ -169,8 +173,12 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         uint256 _pid,
         uint256 _allocPoint,
         IRewarder _rewarder,
-        bool overwrite
+        bool overwrite,
+        bool _withUpdate
     ) public onlyOwner {
+        if (_withUpdate) {
+            massUpdatePools();
+        }
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
         poolInfo[_pid].allocPoint = _allocPoint.to64();
         if (overwrite) {
@@ -192,7 +200,7 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accKdxPerShare = pool.accKdxPerShare;
         uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
-        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
+        if (block.number > pool.lastRewardBlock && lpSupply != 0 && totalAllocPoint != 0) {
             uint256 blocks = block.number.sub(pool.lastRewardBlock);
             uint256 kdxReward = blocks.mul(kdxPerBlock()).mul(pool.allocPoint) / totalAllocPoint;
             accKdxPerShare = accKdxPerShare.add(kdxReward.mul(ACC_KDX_PRECISION) / lpSupply);
@@ -200,12 +208,10 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         pending = int256(user.amount.mul(accKdxPerShare) / ACC_KDX_PRECISION).sub(user.rewardDebt).toUInt256();
     }
 
-    /// @notice Update reward variables for all pools. Be careful of gas spending!
-    /// @param pids Pool IDs of all to be updated. Make sure to update all active pools.
-    function massUpdatePools(uint256[] calldata pids) external {
-        uint256 len = pids.length;
-        for (uint256 i = 0; i < len; ++i) {
-            updatePool(pids[i]);
+    function massUpdatePools() public {
+        uint256 len = poolInfo.length;
+        for (uint256 pid = 0; pid < len; ++pid) {
+            updatePool(pid);
         }
     }
 
@@ -223,7 +229,7 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         pool = poolInfo[pid];
         if (block.number > pool.lastRewardBlock) {
             uint256 lpSupply = lpToken[pid].balanceOf(address(this));
-            if (lpSupply > 0) {
+            if (lpSupply > 0 && totalAllocPoint > 0) {
                 uint256 blocks = block.number.sub(pool.lastRewardBlock);
                 uint256 kdxReward = blocks.mul(kdxPerBlock()).mul(pool.allocPoint) / totalAllocPoint;
                 pool.accKdxPerShare = pool.accKdxPerShare.add((kdxReward.mul(ACC_KDX_PRECISION) / lpSupply).to128());
