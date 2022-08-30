@@ -36,6 +36,7 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         uint128 accKdxPerShare;
         uint64 lastRewardBlock;
         uint64 allocPoint;
+        uint256 totalAmount; // Total LP token deposit in this pool
     }
 
     /// @notice Address of MCV1 contract.
@@ -147,7 +148,8 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
             PoolInfo({
                 allocPoint: allocPoint.to64(),
                 lastRewardBlock: lastRewardBlock.to64(),
-                accKdxPerShare: 0
+                accKdxPerShare: 0,
+                totalAmount: 0
             })
         );
         emit LogPoolAddition(
@@ -258,6 +260,7 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         // lp's balance after tranfer
         uint256 _after = lpToken[pid].balanceOf(address(this));
         require(_after == _before.add(amount), "deposit: not deflation");
+        poolInfo[pid].totalAmount = poolInfo[pid].totalAmount.add(amount);
         emit Deposit(msg.sender, pid, amount, to);
     }
 
@@ -287,6 +290,7 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         // lp's balance after tranfer
         uint256 _after = lpToken[pid].balanceOf(address(this));
         require(_before == _after.add(amount), "withdraw: not deflation");
+        poolInfo[pid].totalAmount = poolInfo[pid].totalAmount.sub(amount);
         emit Withdraw(msg.sender, pid, amount, to);
     }
 
@@ -344,6 +348,7 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         // lp's balance after tranfer
         uint256 _after = lpToken[pid].balanceOf(address(this));
         require(_before == _after.add(amount), "withdrawAndHarvest: not deflation");
+        poolInfo[pid].totalAmount = poolInfo[pid].totalAmount.sub(amount);
         emit Withdraw(msg.sender, pid, amount, to);
         emit Harvest(msg.sender, pid, _pendingKdx);
     }
@@ -373,6 +378,11 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         // lp's balance after tranfer
         uint256 _after = lpToken[pid].balanceOf(address(this));
         require(_before == _after.add(amount), "emergencyWithdraw: not deflation");
+        poolInfo[pid].totalAmount = poolInfo[pid].totalAmount.sub(amount);
         emit EmergencyWithdraw(msg.sender, pid, amount, to);
+    }
+
+    function getTotalDepositAmount(uint256 pid) external view returns(uint256) {
+        return poolInfo[pid].totalAmount;
     }
 }
