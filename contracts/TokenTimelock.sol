@@ -55,10 +55,6 @@ contract TokenTimelock is Ownable {
         return _beneficiary;
     }
 
-    function changeBeneficiary(address _newAddr) public onlyOwner {
-        _beneficiary = _newAddr;
-    }
-
     /**
      * @return the time when the tokens are released.
      */
