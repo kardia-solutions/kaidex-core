@@ -756,6 +756,80 @@ interface IMasterChef {
 }
 
 
+// File contracts/farming/BoringBatchable.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface IERC20Permit {
+    /// @notice EIP 2612
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+}
+
+
+contract BaseBoringBatchable {
+    /// @dev Helper function to extract a useful revert message from a failed call.
+    /// If the returned data is malformed or not correctly abi encoded then this call can fail itself.
+    function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
+        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
+        if (_returnData.length < 68) return "Transaction reverted silently";
+
+        assembly {
+            // Slice the sighash.
+            _returnData := add(_returnData, 0x04)
+        }
+        return abi.decode(_returnData, (string)); // All that remains is the revert string
+    }
+
+    /// @notice Allows batched call to self (this contract).
+    /// @param calls An array of inputs for each call.
+    /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
+    /// @return successes An array indicating the success of a call, mapped one-to-one to `calls`.
+    /// @return results An array with the returned data of each function call, mapped one-to-one to `calls`.
+    // F1: External is ok here because this is the batch function, adding it to a batch makes no sense
+    // F2: Calls in the batch may be payable, delegatecall operates in the same context, so each call in the batch has access to msg.value
+    // C3: The length of the loop is fully under user control, so can't be exploited
+    // C7: Delegatecall is only used on the same contract, so it's safe
+    function batch(bytes[] calldata calls, bool revertOnFail) external payable returns (bool[] memory successes, bytes[] memory results) {
+        successes = new bool[](calls.length);
+        results = new bytes[](calls.length);
+        for (uint256 i = 0; i < calls.length; i++) {
+            (bool success, bytes memory result) = address(this).delegatecall(calls[i]);
+            require(success || !revertOnFail, _getRevertMsg(result));
+            successes[i] = success;
+            results[i] = result;
+        }
+    }
+}
+
+contract BoringBatchable is BaseBoringBatchable {
+    /// @notice Call wrapper that performs `ERC20.permit` on `token`.
+    /// Lookup `IERC20.permit`.
+    // F6: Parameters can be used front-run the permit and the user's permit will fail (due to nonce or other revert)
+    //     if part of a batch this could be used to grief once as the second call would not need the permit
+    function permitToken(
+        IERC20Permit token,
+        address from,
+        address to,
+        uint256 amount,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public {
+        token.permit(from, to, amount, deadline, v, r, s);
+    }
+}
+
+
 // File contracts/farming/KaidexMasterChefV2.sol
 
 // SPDX-License-Identifier: MIT
@@ -768,12 +842,13 @@ pragma experimental ABIEncoderV2;
 
 
 
+
 /// @notice The (older) MasterChef contract gives out a constant number of KDX tokens per block.
 /// It is the only address with minting rights for KDX.
 /// The idea for this MasterChef V2 (MCV2) contract is therefore to be the owner of a dummy token
 /// that is deposited into the MasterChef V1 (MCV1) contract.
 /// The allocation point for this pool on MCV1 is the total allocation point for all pools that receive double incentives.
-contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
+contract KaidexMasterChefV2 is Ownable, ReentrancyGuard, BoringBatchable {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
     using SafeERC20 for IERC20;
@@ -1007,7 +1082,6 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         uint256 amount,
         address to
     ) public nonReentrant {
-        harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][to];
         // Effects
@@ -1037,7 +1111,6 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         uint256 amount,
         address to
     ) public nonReentrant {
-        harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
         // Effects
@@ -1062,7 +1135,6 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param to Receiver of KDX rewards.
     function harvest(uint256 pid, address to) public nonReentrant {
-        harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
         int256 accumulatedKdx = int256(user.amount.mul(pool.accKdxPerShare) / ACC_KDX_PRECISION);
@@ -1078,6 +1150,7 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
             _rewarder.onKdxReward(pid, msg.sender, to, _pendingKdx, user.amount);
         }
         emit Harvest(msg.sender, pid, _pendingKdx);
+
     }
 
     /// @notice Withdraw LP tokens from MCV2 and harvest proceeds for transaction sender to `to`.
@@ -1089,7 +1162,6 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         uint256 amount,
         address to
     ) public nonReentrant {
-        harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
         int256 accumulatedKdx = int256(user.amount.mul(pool.accKdxPerShare) / ACC_KDX_PRECISION);

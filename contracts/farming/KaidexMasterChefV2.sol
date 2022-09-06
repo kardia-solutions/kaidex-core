@@ -9,13 +9,14 @@ import "../libraries/BoringMath.sol";
 import "../libraries/SignedSafeMath.sol";
 import "../interfaces/IRewarder.sol";
 import "../interfaces/IMasterChef.sol";
+import "./BoringBatchable.sol";
 
 /// @notice The (older) MasterChef contract gives out a constant number of KDX tokens per block.
 /// It is the only address with minting rights for KDX.
 /// The idea for this MasterChef V2 (MCV2) contract is therefore to be the owner of a dummy token
 /// that is deposited into the MasterChef V1 (MCV1) contract.
 /// The allocation point for this pool on MCV1 is the total allocation point for all pools that receive double incentives.
-contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
+contract KaidexMasterChefV2 is Ownable, ReentrancyGuard, BoringBatchable {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
     using SafeERC20 for IERC20;
@@ -249,7 +250,6 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         uint256 amount,
         address to
     ) public nonReentrant {
-        harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][to];
         // Effects
@@ -279,7 +279,6 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         uint256 amount,
         address to
     ) public nonReentrant {
-        harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
         // Effects
@@ -304,7 +303,6 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param to Receiver of KDX rewards.
     function harvest(uint256 pid, address to) public nonReentrant {
-        harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
         int256 accumulatedKdx = int256(user.amount.mul(pool.accKdxPerShare) / ACC_KDX_PRECISION);
@@ -320,6 +318,7 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
             _rewarder.onKdxReward(pid, msg.sender, to, _pendingKdx, user.amount);
         }
         emit Harvest(msg.sender, pid, _pendingKdx);
+
     }
 
     /// @notice Withdraw LP tokens from MCV2 and harvest proceeds for transaction sender to `to`.
@@ -331,7 +330,6 @@ contract KaidexMasterChefV2 is Ownable, ReentrancyGuard {
         uint256 amount,
         address to
     ) public nonReentrant {
-        harvestFromMasterChef();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
         int256 accumulatedKdx = int256(user.amount.mul(pool.accKdxPerShare) / ACC_KDX_PRECISION);
