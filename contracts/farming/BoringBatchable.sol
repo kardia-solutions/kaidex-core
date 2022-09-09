@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface IERC20Permit {
+interface IKRC20Permit {
     /// @notice EIP 2612
     function permit(
         address owner,
@@ -56,7 +56,7 @@ contract BoringBatchable is BaseBoringBatchable {
     // F6: Parameters can be used front-run the permit and the user's permit will fail (due to nonce or other revert)
     //     if part of a batch this could be used to grief once as the second call would not need the permit
     function permitToken(
-        IERC20Permit token,
+        IKRC20Permit token,
         address from,
         address to,
         uint256 amount,

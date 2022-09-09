@@ -124,13 +124,15 @@ contract CloneRewarder is IRewarder, Ownable {
                     user.unpaidRewards
                 );
             uint256 balance = rewardToken.balanceOf(address(this));
-            if (pending > balance) {
-                rewardToken.safeTransfer(to, balance);
-                user.unpaidRewards = pending - balance;
-            } else {
-                rewardToken.safeTransfer(to, pending);
-                user.unpaidRewards = 0;
-            }
+            if (pending  > 0) {
+                if (pending > balance) {
+                    rewardToken.safeTransfer(to, balance);
+                    user.unpaidRewards = pending - balance;
+                } else {
+                    rewardToken.safeTransfer(to, pending);
+                    user.unpaidRewards = 0;
+                }
+                }
         }
         user.amount = lpTokenAmount;
         user.rewardDebt =

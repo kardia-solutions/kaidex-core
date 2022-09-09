@@ -1,9 +1,9 @@
 // Sources flattened with hardhat v2.9.3 https://hardhat.org
 
-// File @openzeppelin/contracts/token/ERC20/IERC20.sol@v4.5.0
+// File @openzeppelin/contracts/token/ERC20/IERC20.sol@v4.7.3
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.5.0) (token/ERC20/IERC20.sol)
+// OpenZeppelin Contracts (last updated v4.6.0) (token/ERC20/IERC20.sol)
 
 pragma solidity ^0.8.0;
 
@@ -11,6 +11,20 @@ pragma solidity ^0.8.0;
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
 interface IERC20 {
+    /**
+     * @dev Emitted when `value` tokens are moved from one account (`from`) to
+     * another (`to`).
+     *
+     * Note that `value` may be zero.
+     */
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    /**
+     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
+     * a call to {approve}. `value` is the new allowance.
+     */
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+
     /**
      * @dev Returns the amount of tokens in existence.
      */
@@ -69,20 +83,6 @@ interface IERC20 {
         address to,
         uint256 amount
     ) external returns (bool);
-
-    /**
-     * @dev Emitted when `value` tokens are moved from one account (`from`) to
-     * another (`to`).
-     *
-     * Note that `value` may be zero.
-     */
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    /**
-     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
-     * a call to {approve}. `value` is the new allowance.
-     */
-    event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
 
@@ -168,7 +168,7 @@ library BoringERC20 {
 }
 
 
-// File @openzeppelin/contracts/utils/Context.sol@v4.5.0
+// File @openzeppelin/contracts/utils/Context.sol@v4.7.3
 
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
@@ -196,10 +196,10 @@ abstract contract Context {
 }
 
 
-// File @openzeppelin/contracts/access/Ownable.sol@v4.5.0
+// File @openzeppelin/contracts/access/Ownable.sol@v4.7.3
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.1 (access/Ownable.sol)
+// OpenZeppelin Contracts (last updated v4.7.0) (access/Ownable.sol)
 
 pragma solidity ^0.8.0;
 
@@ -228,6 +228,14 @@ abstract contract Ownable is Context {
     }
 
     /**
+     * @dev Throws if called by any account other than the owner.
+     */
+    modifier onlyOwner() {
+        _checkOwner();
+        _;
+    }
+
+    /**
      * @dev Returns the address of the current owner.
      */
     function owner() public view virtual returns (address) {
@@ -235,11 +243,10 @@ abstract contract Ownable is Context {
     }
 
     /**
-     * @dev Throws if called by any account other than the owner.
+     * @dev Throws if the sender is not the owner.
      */
-    modifier onlyOwner() {
+    function _checkOwner() internal view virtual {
         require(owner() == _msgSender(), "Ownable: caller is not the owner");
-        _;
     }
 
     /**
@@ -400,13 +407,15 @@ contract CloneRewarder is IRewarder, Ownable {
                     user.unpaidRewards
                 );
             uint256 balance = rewardToken.balanceOf(address(this));
-            if (pending > balance) {
-                rewardToken.safeTransfer(to, balance);
-                user.unpaidRewards = pending - balance;
-            } else {
-                rewardToken.safeTransfer(to, pending);
-                user.unpaidRewards = 0;
-            }
+            if (pending  > 0) {
+                if (pending > balance) {
+                    rewardToken.safeTransfer(to, balance);
+                    user.unpaidRewards = pending - balance;
+                } else {
+                    rewardToken.safeTransfer(to, pending);
+                    user.unpaidRewards = 0;
+                }
+                }
         }
         user.amount = lpTokenAmount;
         user.rewardDebt =
