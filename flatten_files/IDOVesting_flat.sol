@@ -1,6 +1,6 @@
 // Sources flattened with hardhat v2.9.3 https://hardhat.org
 
-// File @openzeppelin/contracts/security/ReentrancyGuard.sol@v4.7.3
+// File @openzeppelin/contracts/security/ReentrancyGuard.sol@v4.5.0
 
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts v4.4.1 (security/ReentrancyGuard.sol)
@@ -67,10 +67,10 @@ abstract contract ReentrancyGuard {
 }
 
 
-// File @openzeppelin/contracts/utils/math/SafeMath.sol@v4.7.3
+// File @openzeppelin/contracts/utils/math/SafeMath.sol@v4.5.0
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.6.0) (utils/math/SafeMath.sol)
+// OpenZeppelin Contracts v4.4.1 (utils/math/SafeMath.sol)
 
 pragma solidity ^0.8.0;
 
@@ -99,7 +99,7 @@ library SafeMath {
     }
 
     /**
-     * @dev Returns the subtraction of two unsigned integers, with an overflow flag.
+     * @dev Returns the substraction of two unsigned integers, with an overflow flag.
      *
      * _Available since v3.4._
      */
@@ -298,10 +298,10 @@ library SafeMath {
 }
 
 
-// File @openzeppelin/contracts/token/ERC20/IERC20.sol@v4.7.3
+// File @openzeppelin/contracts/token/ERC20/IERC20.sol@v4.5.0
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.6.0) (token/ERC20/IERC20.sol)
+// OpenZeppelin Contracts (last updated v4.5.0) (token/ERC20/IERC20.sol)
 
 pragma solidity ^0.8.0;
 
@@ -309,20 +309,6 @@ pragma solidity ^0.8.0;
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
 interface IERC20 {
-    /**
-     * @dev Emitted when `value` tokens are moved from one account (`from`) to
-     * another (`to`).
-     *
-     * Note that `value` may be zero.
-     */
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    /**
-     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
-     * a call to {approve}. `value` is the new allowance.
-     */
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-
     /**
      * @dev Returns the amount of tokens in existence.
      */
@@ -381,77 +367,27 @@ interface IERC20 {
         address to,
         uint256 amount
     ) external returns (bool);
+
+    /**
+     * @dev Emitted when `value` tokens are moved from one account (`from`) to
+     * another (`to`).
+     *
+     * Note that `value` may be zero.
+     */
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    /**
+     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
+     * a call to {approve}. `value` is the new allowance.
+     */
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
 
-// File @openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol@v4.7.3
+// File @openzeppelin/contracts/utils/Address.sol@v4.5.0
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.1 (token/ERC20/extensions/draft-IERC20Permit.sol)
-
-pragma solidity ^0.8.0;
-
-/**
- * @dev Interface of the ERC20 Permit extension allowing approvals to be made via signatures, as defined in
- * https://eips.ethereum.org/EIPS/eip-2612[EIP-2612].
- *
- * Adds the {permit} method, which can be used to change an account's ERC20 allowance (see {IERC20-allowance}) by
- * presenting a message signed by the account. By not relying on {IERC20-approve}, the token holder account doesn't
- * need to send a transaction, and thus is not required to hold Ether at all.
- */
-interface IERC20Permit {
-    /**
-     * @dev Sets `value` as the allowance of `spender` over ``owner``'s tokens,
-     * given ``owner``'s signed approval.
-     *
-     * IMPORTANT: The same issues {IERC20-approve} has related to transaction
-     * ordering also apply here.
-     *
-     * Emits an {Approval} event.
-     *
-     * Requirements:
-     *
-     * - `spender` cannot be the zero address.
-     * - `deadline` must be a timestamp in the future.
-     * - `v`, `r` and `s` must be a valid `secp256k1` signature from `owner`
-     * over the EIP712-formatted function arguments.
-     * - the signature must use ``owner``'s current nonce (see {nonces}).
-     *
-     * For more information on the signature format, see the
-     * https://eips.ethereum.org/EIPS/eip-2612#specification[relevant EIP
-     * section].
-     */
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
-
-    /**
-     * @dev Returns the current nonce for `owner`. This value must be
-     * included whenever a signature is generated for {permit}.
-     *
-     * Every successful call to {permit} increases ``owner``'s nonce by one. This
-     * prevents a signature from being used multiple times.
-     */
-    function nonces(address owner) external view returns (uint256);
-
-    /**
-     * @dev Returns the domain separator used in the encoding of the signature for {permit}, as defined by {EIP712}.
-     */
-    // solhint-disable-next-line func-name-mixedcase
-    function DOMAIN_SEPARATOR() external view returns (bytes32);
-}
-
-
-// File @openzeppelin/contracts/utils/Address.sol@v4.7.3
-
-// SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.7.0) (utils/Address.sol)
+// OpenZeppelin Contracts (last updated v4.5.0) (utils/Address.sol)
 
 pragma solidity ^0.8.1;
 
@@ -661,7 +597,7 @@ library Address {
             // Look for revert reason and bubble it up if present
             if (returndata.length > 0) {
                 // The easiest way to bubble the revert reason is using memory via assembly
-                /// @solidity memory-safe-assembly
+
                 assembly {
                     let returndata_size := mload(returndata)
                     revert(add(32, returndata), returndata_size)
@@ -674,13 +610,12 @@ library Address {
 }
 
 
-// File @openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol@v4.7.3
+// File @openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol@v4.5.0
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.7.0) (token/ERC20/utils/SafeERC20.sol)
+// OpenZeppelin Contracts v4.4.1 (token/ERC20/utils/SafeERC20.sol)
 
 pragma solidity ^0.8.0;
-
 
 
 /**
@@ -756,22 +691,6 @@ library SafeERC20 {
         }
     }
 
-    function safePermit(
-        IERC20Permit token,
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal {
-        uint256 nonceBefore = token.nonces(owner);
-        token.permit(owner, spender, value, deadline, v, r, s);
-        uint256 nonceAfter = token.nonces(owner);
-        require(nonceAfter == nonceBefore + 1, "SafeERC20: permit did not succeed");
-    }
-
     /**
      * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement
      * on the return value: the return value is optional (but if data is returned, it must not be false).
@@ -792,7 +711,7 @@ library SafeERC20 {
 }
 
 
-// File @openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol@v4.7.3
+// File @openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol@v4.5.0
 
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts v4.4.1 (token/ERC20/extensions/IERC20Metadata.sol)
@@ -822,7 +741,7 @@ interface IERC20Metadata is IERC20 {
 }
 
 
-// File @openzeppelin/contracts/utils/Context.sol@v4.7.3
+// File @openzeppelin/contracts/utils/Context.sol@v4.5.0
 
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
@@ -850,10 +769,10 @@ abstract contract Context {
 }
 
 
-// File @openzeppelin/contracts/token/ERC20/ERC20.sol@v4.7.3
+// File @openzeppelin/contracts/token/ERC20/ERC20.sol@v4.5.0
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.7.0) (token/ERC20/ERC20.sol)
+// OpenZeppelin Contracts (last updated v4.5.0) (token/ERC20/ERC20.sol)
 
 pragma solidity ^0.8.0;
 
@@ -1032,7 +951,7 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
      */
     function increaseAllowance(address spender, uint256 addedValue) public virtual returns (bool) {
         address owner = _msgSender();
-        _approve(owner, spender, allowance(owner, spender) + addedValue);
+        _approve(owner, spender, _allowances[owner][spender] + addedValue);
         return true;
     }
 
@@ -1052,7 +971,7 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
      */
     function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
         address owner = _msgSender();
-        uint256 currentAllowance = allowance(owner, spender);
+        uint256 currentAllowance = _allowances[owner][spender];
         require(currentAllowance >= subtractedValue, "ERC20: decreased allowance below zero");
         unchecked {
             _approve(owner, spender, currentAllowance - subtractedValue);
@@ -1062,7 +981,7 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
     }
 
     /**
-     * @dev Moves `amount` of tokens from `from` to `to`.
+     * @dev Moves `amount` of tokens from `sender` to `recipient`.
      *
      * This internal function is equivalent to {transfer}, and can be used to
      * e.g. implement automatic token fees, slashing mechanisms, etc.
@@ -1172,7 +1091,7 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
     }
 
     /**
-     * @dev Updates `owner` s allowance for `spender` based on spent `amount`.
+     * @dev Spend `amount` form the allowance of `owner` toward `spender`.
      *
      * Does not update the allowance amount in case of infinite allowance.
      * Revert if not enough allowance is available.
@@ -1235,10 +1154,10 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
 }
 
 
-// File @openzeppelin/contracts/access/Ownable.sol@v4.7.3
+// File @openzeppelin/contracts/access/Ownable.sol@v4.5.0
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.7.0) (access/Ownable.sol)
+// OpenZeppelin Contracts v4.4.1 (access/Ownable.sol)
 
 pragma solidity ^0.8.0;
 
@@ -1267,14 +1186,6 @@ abstract contract Ownable is Context {
     }
 
     /**
-     * @dev Throws if called by any account other than the owner.
-     */
-    modifier onlyOwner() {
-        _checkOwner();
-        _;
-    }
-
-    /**
      * @dev Returns the address of the current owner.
      */
     function owner() public view virtual returns (address) {
@@ -1282,10 +1193,11 @@ abstract contract Ownable is Context {
     }
 
     /**
-     * @dev Throws if the sender is not the owner.
+     * @dev Throws if called by any account other than the owner.
      */
-    function _checkOwner() internal view virtual {
+    modifier onlyOwner() {
         require(owner() == _msgSender(), "Ownable: caller is not the owner");
+        _;
     }
 
     /**
@@ -1320,10 +1232,10 @@ abstract contract Ownable is Context {
 }
 
 
-// File @openzeppelin/contracts/security/Pausable.sol@v4.7.3
+// File @openzeppelin/contracts/security/Pausable.sol@v4.5.0
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.7.0) (security/Pausable.sol)
+// OpenZeppelin Contracts v4.4.1 (security/Pausable.sol)
 
 pragma solidity ^0.8.0;
 
@@ -1357,6 +1269,13 @@ abstract contract Pausable is Context {
     }
 
     /**
+     * @dev Returns true if the contract is paused, and false otherwise.
+     */
+    function paused() public view virtual returns (bool) {
+        return _paused;
+    }
+
+    /**
      * @dev Modifier to make a function callable only when the contract is not paused.
      *
      * Requirements:
@@ -1364,7 +1283,7 @@ abstract contract Pausable is Context {
      * - The contract must not be paused.
      */
     modifier whenNotPaused() {
-        _requireNotPaused();
+        require(!paused(), "Pausable: paused");
         _;
     }
 
@@ -1376,29 +1295,8 @@ abstract contract Pausable is Context {
      * - The contract must be paused.
      */
     modifier whenPaused() {
-        _requirePaused();
-        _;
-    }
-
-    /**
-     * @dev Returns true if the contract is paused, and false otherwise.
-     */
-    function paused() public view virtual returns (bool) {
-        return _paused;
-    }
-
-    /**
-     * @dev Throws if the contract is paused.
-     */
-    function _requireNotPaused() internal view virtual {
-        require(!paused(), "Pausable: paused");
-    }
-
-    /**
-     * @dev Throws if the contract is not paused.
-     */
-    function _requirePaused() internal view virtual {
         require(paused(), "Pausable: not paused");
+        _;
     }
 
     /**
@@ -1559,8 +1457,14 @@ contract IDOVesting is ReentrancyGuard, Ownable, Pausable {
         uint256 vestingSchedule
     );
     event AddVestingSchedule (
+        uint256 scheduleId,
         uint256 vestingTime,
         uint256 vestingAlloc
+    );
+    event UpdateVestingSchedule (
+        uint256 scheduleId,
+        uint256 newVestingTime,
+        uint256 newVestingAlloc
     );
 
     struct TokenInfo {
@@ -1619,7 +1523,7 @@ contract IDOVesting is ReentrancyGuard, Ownable, Pausable {
     }
 
     function setVestingSchedule (uint256 vestingTime, uint256 vestingAlloc) public onlyOwner {
-        require(vestingTime > block.timestamp && vestingAlloc <= ALLOCATION_PRECISION, "agrs invalid");
+        require(vestingTime > block.timestamp && vestingTime > harvestTime && vestingAlloc <= ALLOCATION_PRECISION, "agrs invalid");
         require(vestingAlloc <= vestingAllocRemaining, "allocation overload");
         vestingAllocRemaining -= vestingAlloc;
         VestingSchedule memory newSchedule = VestingSchedule({
@@ -1633,7 +1537,30 @@ contract IDOVesting is ReentrancyGuard, Ownable, Pausable {
             require(vestingTime > latestSchedule.vestingTime, "vesting time wrong!");
             vestingSchedules.push(newSchedule);
         }
-        emit AddVestingSchedule(vestingTime, vestingAlloc);
+        emit AddVestingSchedule(vestingSchedules.length - 1, vestingTime, vestingAlloc);
+    }
+
+    function getVestingScheduleLength() public view returns(uint256) {
+        return vestingSchedules.length;
+    }
+
+    function updateVestingSchedule (uint256 id, uint256 vestingTime, uint256 vestingAlloc) public onlyOwner {
+        require(id < vestingSchedules.length, "id invalid");
+        require(vestingTime > block.timestamp && vestingTime > harvestTime, "vestingTime invalid");
+        VestingSchedule storage schedule = vestingSchedules[id];
+        require(schedule.vestingTime > block.timestamp, "Schedule was happened");
+        if (vestingSchedules.length > id + 1) {
+            require(vestingTime < vestingSchedules[id + 1].vestingTime, "next time wrong");
+        }
+        if (vestingSchedules.length > 1 && id > 0) {
+            require(vestingTime > vestingSchedules[id - 1].vestingTime, "previous time wrong");
+        }
+        (bool valid, uint256 newRemaining) = vestingAllocRemaining.add(schedule.vestingAllocation).trySub(vestingAlloc);
+        require(valid, "allocation invalid!");
+        vestingAllocRemaining = newRemaining;
+        schedule.vestingTime = vestingTime;
+        schedule.vestingAllocation = vestingAlloc;
+        emit UpdateVestingSchedule(id, vestingTime, vestingAlloc);
     }
 
     function setSnapshotFrom (uint256 id) public onlyOwner {
@@ -1786,7 +1713,456 @@ contract IDOVesting is ReentrancyGuard, Ownable, Pausable {
 
     function getAllocation (address _account) external view returns (uint256) {
         uint256 tier = tierSystem.getTierFromTo(_account, snapshotFrom, snapshotTo);
+        if (tier == 0) return 0;contract IDOVesting is ReentrancyGuard, Ownable, Pausable {
+    using SafeMath for uint256;
+    using SafeERC20 for ERC20;
+
+    // Info of each user.
+    struct UserInfo {
+        uint256 amount; // How many tokens the user has provided.
+        uint256 claimedAmount; 
+        uint256 latestVesting; 
+        bool refunded; // default was false
+    }
+
+    // Vesting Schedule
+    struct VestingSchedule {
+        uint256 vestingTime;
+        uint256 vestingAllocation;
+    }
+
+    // The buy token
+    ERC20 public buyToken; // Ex.USDT, DAI ... If buyToken = address(0) => so this is using KAI native
+    // The offering token
+    ERC20 public offeringToken;
+    // The timestamp when raising starts
+    uint256 public startTime;
+    // The timestamp when raising ends
+    uint256 public endTime;
+    // The timestamp user staring harvest
+    uint256 public harvestTime;
+    // total amount of raising tokens need to be raised
+    uint256 public raisingAmount;
+    // total amount of offeringToken that will offer
+    uint256 public offeringAmount;
+    // total amount of raising tokens that have already raised
+    uint256 public totalAmount;
+    // address => amount
+    mapping(address => UserInfo) public userInfo;
+    // participators
+    address[] public addressList;
+
+    // Tier system
+    ITierSystem public tierSystem;
+
+    // snapshot ids
+    uint256 public snapshotFrom;
+    uint256 public snapshotTo;
+
+    // Project multiplier: 10000 ~ 1, 1000 ~ 0.1
+    uint256 public multiplier;
+
+    VestingSchedule[] public vestingSchedules;
+    uint256 public vestingAllocRemaining = 10000;
+
+    uint256 private constant ALLOCATION_PRECISION = 10000;
+
+    event Deposit(address indexed user, uint256 amount);
+    event Harvest(
+        address indexed user,
+        uint256 offeringAmount,
+        uint256 excessAmount,
+        uint256 vestingSchedule
+    );
+    event AddVestingSchedule (
+        uint256 scheduleId,
+        uint256 vestingTime,
+        uint256 vestingAlloc
+    );
+    event UpdateVestingSchedule (
+        uint256 scheduleId,
+        uint256 newVestingTime,
+        uint256 newVestingAlloc
+    );
+
+    struct TokenInfo {
+        ERC20 token;
+        uint256 decimals;
+        string name;
+        string symbol;
+    }
+
+    constructor(
+        // ERC20 _buyToken,
+        // ERC20 _offeringToken,
+        // uint256 _startTime,
+        // uint256 _endTime,
+        // uint256 _harvestTime
+        // uint256 _offeringAmount,
+        // uint256 _raisingAmount,
+        // ITierSystem _tierSystem,
+        // uint256 _snapshotFrom,
+        // uint256 _snapshotTo,
+        // uint256 _multiplier
+    ) public {
+        // require(
+        //     _harvestTime >= _endTime &&
+        //     _endTime > _startTime &&
+        //     _startTime > block.timestamp
+        // );
+        buyToken = ERC20(address(0));
+        offeringToken = ERC20(0x1110A87c7664e819fca35B9B0f6d31f64aC78963);
+        startTime = 1662715080;
+        endTime = 1662715200;
+        harvestTime = 1662715200;
+        offeringAmount = 1000000000000000000000;
+        raisingAmount = 3000000000000000000000;
+        totalAmount = 0;
+        tierSystem = ITierSystem(0x8767d6FF6eb96fFBA0dCDb4927262C05911d1580);
+        snapshotFrom = 1;
+        snapshotTo = 3;
+        multiplier = 100000;
+    }
+
+    modifier depositAllowed(uint256 _amount) {
+        require(
+            block.timestamp > startTime && block.timestamp < endTime,
+            "not raising time"
+        );
+        require(_amount > 0, "need _amount > 0");
+        _;
+    }
+
+    modifier harvestAllowed() {
+        require(block.timestamp > harvestTime, "not harvest time");
+        require(userInfo[msg.sender].amount > 0, "have you participated?");
+        require(vestingSchedules.length > 0, "vesting schedule not set!");
+        _;
+    }
+
+    function setVestingSchedule (uint256 vestingTime, uint256 vestingAlloc) public onlyOwner {
+        require(vestingTime > block.timestamp && vestingTime > harvestTime && vestingAlloc <= ALLOCATION_PRECISION, "agrs invalid");
+        require(vestingAlloc <= vestingAllocRemaining, "allocation overload");
+        vestingAllocRemaining -= vestingAlloc;
+        VestingSchedule memory newSchedule = VestingSchedule({
+            vestingTime: vestingTime,
+            vestingAllocation: vestingAlloc
+        });
+        if (vestingSchedules.length == 0) {
+            vestingSchedules.push(newSchedule); 
+        } else {
+            VestingSchedule memory latestSchedule = vestingSchedules[vestingSchedules.length - 1];
+            require(vestingTime > latestSchedule.vestingTime, "vesting time wrong!");
+            vestingSchedules.push(newSchedule);
+        }
+        emit AddVestingSchedule(vestingSchedules.length - 1, vestingTime, vestingAlloc);
+    }
+
+    function getVestingScheduleLength() public view returns(uint256) {
+        return vestingSchedules.length;
+    }
+
+    function updateVestingSchedule (uint256 id, uint256 vestingTime, uint256 vestingAlloc) public onlyOwner {
+        require(id < vestingSchedules.length, "id invalid");
+        require(vestingTime > block.timestamp && vestingTime > harvestTime, "vestingTime invalid");
+        VestingSchedule storage schedule = vestingSchedules[id];
+        require(schedule.vestingTime > block.timestamp, "Schedule was happened");
+        if (vestingSchedules.length > id + 1) {
+            require(vestingTime < vestingSchedules[id + 1].vestingTime, "next time wrong");
+        }
+        if (vestingSchedules.length > 1 && id > 0) {
+            require(vestingTime > vestingSchedules[id - 1].vestingTime, "previous time wrong");
+        }
+        (bool valid, uint256 newRemaining) = vestingAllocRemaining.add(schedule.vestingAllocation).trySub(vestingAlloc);
+        require(valid, "allocation invalid!");
+        vestingAllocRemaining = newRemaining;
+        schedule.vestingTime = vestingTime;
+        schedule.vestingAllocation = vestingAlloc;
+        emit UpdateVestingSchedule(id, vestingTime, vestingAlloc);
+    }
+
+    function setSnapshotFrom (uint256 id) public onlyOwner {
+        require(id > 0, 'Id invalid');
+        snapshotFrom = id;
+    }
+
+    function setSnapshotTo (uint256 id) public onlyOwner {
+        require(id > 0, 'Id invalid');
+        snapshotTo = id;
+    }
+
+    function setMultiplier (uint256 mul) public onlyOwner {
+        multiplier = mul;
+    }
+
+    function updateHarvestTime(uint256 _newTime) public onlyOwner {
+        require(
+            _newTime > block.timestamp && _newTime > endTime,
+            "time invalid!!"
+        );
+        harvestTime = _newTime;
+    }
+
+    function updateEndTime(uint256 _newTime) public onlyOwner {
+        require(
+            _newTime > block.timestamp && _newTime < harvestTime,
+            "time invalid!!"
+        );
+        endTime = _newTime;
+    }
+
+    function getInfo()
+        public
+        view
+        returns (
+            TokenInfo memory,
+            TokenInfo memory,
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        TokenInfo memory _buyToken;
+        if (buyToken == ERC20(address(0))) {
+            _buyToken = TokenInfo({
+                token: ERC20(address(0)),
+                decimals: 18,
+                name: 'KardiaChain',
+                symbol: 'KAI'
+            });
+        } else {
+            _buyToken = getERC20Info(buyToken);
+        }
+        TokenInfo memory _offeringToken = getERC20Info(offeringToken);
+        return (
+            _buyToken,
+            _offeringToken,
+            startTime,
+            endTime,
+            harvestTime,
+            offeringAmount,
+            raisingAmount
+        );
+    }
+
+    function getERC20Info(ERC20 _token)
+        private
+        view
+        returns (TokenInfo memory)
+    {
+        return
+            TokenInfo({
+                token: _token,
+                decimals: _token.decimals(),
+                name: _token.name(),
+                symbol: _token.symbol()
+            });
+    }
+
+    function setOfferingAmount(uint256 _offerAmount) public onlyOwner {
+        require(block.timestamp < startTime, "no");
+        offeringAmount = _offerAmount;
+    }
+
+    function setRaisingAmount(uint256 _raisingAmount) public onlyOwner {
+        require(block.timestamp < startTime, "no");
+        raisingAmount = _raisingAmount;
+    }
+
+    function updateOfferingToken (address _newToken) public onlyOwner {
+        require(_newToken != address(0), "no");
+        offeringToken = ERC20(_newToken);
+    } 
+
+
+    function deposit(uint256 _amount)
+        public
+        payable
+        nonReentrant
+        depositAllowed(_amount)
+        whenNotPaused
+    {
+        uint256 maxAllocation = _computeMaxAllocation(msg.sender);
+        require(
+            maxAllocation > userInfo[msg.sender].amount,
+            "not eligible amount!!"
+        );
+        uint256 eligibleAmount = maxAllocation - userInfo[msg.sender].amount;
+        uint256 amount = _amount;
+        if (eligibleAmount < _amount) {
+            amount = eligibleAmount;
+        }
+        if (buyToken == IERC20(address(0))) {
+            require(msg.value >= amount, "amount not enough");
+            if (msg.value > amount) {
+                TransferHelper.safeTransferKAI(msg.sender, msg.value - amount);
+            }
+        } else {
+            buyToken.safeTransferFrom(
+                address(msg.sender),
+                address(this),
+                amount
+            );
+        }
+        if (userInfo[msg.sender].amount == 0) {
+            addressList.push(address(msg.sender));
+        }
+        userInfo[msg.sender].amount = userInfo[msg.sender].amount.add(amount);
+        totalAmount = totalAmount.add(amount);
+        emit Deposit(msg.sender, amount);
+    }
+
+    function _computeMaxAllocation(address _account)
+        private
+        view
+        returns (uint256)
+    {
+        // require(snapshotFrom > 0 && snapshotTo > snapshotFrom, "Snapshot id not set");
+        // uint256 tier = tierSystem.getTierFromTo(_account, snapshotFrom, snapshotTo);
+        // if (tier == 0) return 0;
+        // return allocations(tier);
+        return 5000000000000000000000;
+    }
+
+    function getTier (address _account) external view returns (uint256) {
+        return tierSystem.getTierFromTo(_account, snapshotFrom, snapshotTo);
+    }
+
+    function getAllocation (address _account) external view returns (uint256) {
+        uint256 tier = tierSystem.getTierFromTo(_account, snapshotFrom, snapshotTo);
         if (tier == 0) return 0;
+        return allocations(tier);
+    }
+
+    function getAllocationPoint (address _account) external view returns (uint256) {
+        uint256 tier = tierSystem.getTierFromTo(_account, snapshotFrom, snapshotTo);
+        if (tier == 0) return 0;
+        return tierSystem.getAllocationPoint(tier);
+    }
+
+    function allocations(uint256 _tier) view public returns (uint256) {
+        // uint256 _alloPoint = tierSystem.getAllocationPoint(_tier);
+        // if (buyToken == IERC20(address(0)) ) {
+        //     return _alloPoint.mul(multiplier).mul(1e18).div(10000);
+        // }
+        // return _alloPoint.mul(multiplier).mul(10 ** buyToken.decimals()).div(10000);
+        return 5000000000000000000000;
+    }
+
+    function harvest() public nonReentrant harvestAllowed whenNotPaused {
+        uint256 claimableAmount = getOfferingClaimableAmount(msg.sender);
+        require(claimableAmount > 0, "not claimable!");
+        uint256 refundingTokenAmount = getRefundingAmount(msg.sender);
+        offeringToken.safeTransfer(address(msg.sender), claimableAmount);
+        if (refundingTokenAmount > 0 && !userInfo[msg.sender].refunded) {
+            if (buyToken == IERC20(address(0))) {
+                TransferHelper.safeTransferKAI(
+                    msg.sender,
+                    refundingTokenAmount
+                );
+            } else {
+                buyToken.safeTransfer(
+                    address(msg.sender),
+                    refundingTokenAmount
+                );
+            }
+            userInfo[msg.sender].refunded = true;
+        }
+        userInfo[msg.sender].claimedAmount += claimableAmount;
+        userInfo[msg.sender].latestVesting = getCurrentValidVestingSchedule();
+        emit Harvest(msg.sender, claimableAmount, refundingTokenAmount, userInfo[msg.sender].latestVesting);
+    }
+
+    function getUserAllocation(address _user) public view returns (uint256) {
+        return userInfo[_user].amount.mul(1e18).div(totalAmount);
+    }
+
+    // get the amount of Offering token you will get
+    function getTotalOfferingAmount(address _user) public view returns (uint256) {
+        if (totalAmount > raisingAmount) {
+            uint256 allocation = getUserAllocation(_user);
+            return offeringAmount.mul(allocation).div(1e18);
+        } else {
+            // userInfo[_user] / (raisingAmount / offeringAmount)
+            return
+                userInfo[_user].amount.mul(offeringAmount).div(raisingAmount);
+        }
+    }
+
+    // get the claimable amount of offering token you will get
+    function getOfferingClaimableAmount (address _user) public view returns (uint256 claimableAmount) {
+        uint256 totalOfferingAmount = getTotalOfferingAmount(_user);
+        uint256 currentSchedule = getCurrentValidVestingSchedule();
+        uint256 userLatestVesting = userInfo[_user].latestVesting;
+        if (currentSchedule > 0 && userLatestVesting < currentSchedule) {
+            for (uint256 i = userLatestVesting; i < currentSchedule; i++) {
+                claimableAmount += totalOfferingAmount.mul(vestingSchedules[i].vestingAllocation).div(ALLOCATION_PRECISION);
+            }
+        }
+    }
+
+    // get the amount of lp token you will be refunded
+    function getRefundingAmount(address _user) public view returns (uint256) {
+        if (totalAmount <= raisingAmount) {
+            return 0;
+        }
+        uint256 allocation = getUserAllocation(_user);
+        uint256 payAmount = raisingAmount.mul(allocation).div(1e18);
+        return userInfo[_user].amount.sub(payAmount).sub(10000);
+    }
+
+    function getCurrentValidVestingSchedule () public view returns (uint256 id) {
+        for (uint256 i = 0; i < vestingSchedules.length; i++) {
+            if (vestingSchedules[i].vestingTime < block.timestamp) {
+                id = i + 1;
+            }
+        }
+    }
+
+    function getAddressListLength() external view returns (uint256) {
+        return addressList.length;
+    }
+
+    function finalWithdraw(address _destination) public onlyOwner {
+        if (buyToken == IERC20(address(0))) {
+            uint256 _withdraw = address(this).balance < raisingAmount ? address(this).balance : raisingAmount;
+            TransferHelper.safeTransferKAI(_destination, _withdraw);
+        } else {
+            uint256 _withdraw = buyToken.balanceOf(address(this)) < raisingAmount ? buyToken.balanceOf(address(this)) : raisingAmount;
+            buyToken.safeTransfer(
+                address(_destination),
+                _withdraw
+            );
+        }
+    }
+
+    function emergencyWithdraw(address token, address payable to)
+        public
+        onlyOwner
+    {
+        if (token == address(0)) {
+            to.transfer(address(this).balance);
+        } else {
+            ERC20(token).safeTransfer(
+                to,
+                ERC20(token).balanceOf(address(this))
+            );
+        }
+    }
+
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        _unpause();
+    }
+
+    fallback () external payable{}
+}
+
         return allocations(tier);
     }
 
@@ -1868,7 +2244,7 @@ contract IDOVesting is ReentrancyGuard, Ownable, Pausable {
 
     function getCurrentValidVestingSchedule () public view returns (uint256 id) {
         for (uint256 i = 0; i < vestingSchedules.length; i++) {
-            if (vestingSchedules[i].vestingTime >= block.timestamp) {
+            if (vestingSchedules[i].vestingTime < block.timestamp) {
                 id = i + 1;
             }
         }

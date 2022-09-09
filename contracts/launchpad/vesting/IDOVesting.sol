@@ -72,8 +72,14 @@ contract IDOVesting is ReentrancyGuard, Ownable, Pausable {
         uint256 vestingSchedule
     );
     event AddVestingSchedule (
+        uint256 scheduleId,
         uint256 vestingTime,
         uint256 vestingAlloc
+    );
+    event UpdateVestingSchedule (
+        uint256 scheduleId,
+        uint256 newVestingTime,
+        uint256 newVestingAlloc
     );
 
     struct TokenInfo {
@@ -132,7 +138,7 @@ contract IDOVesting is ReentrancyGuard, Ownable, Pausable {
     }
 
     function setVestingSchedule (uint256 vestingTime, uint256 vestingAlloc) public onlyOwner {
-        require(vestingTime > block.timestamp && vestingAlloc <= ALLOCATION_PRECISION, "agrs invalid");
+        require(vestingTime > block.timestamp && vestingTime > harvestTime && vestingAlloc <= ALLOCATION_PRECISION, "agrs invalid");
         require(vestingAlloc <= vestingAllocRemaining, "allocation overload");
         vestingAllocRemaining -= vestingAlloc;
         VestingSchedule memory newSchedule = VestingSchedule({
@@ -146,7 +152,30 @@ contract IDOVesting is ReentrancyGuard, Ownable, Pausable {
             require(vestingTime > latestSchedule.vestingTime, "vesting time wrong!");
             vestingSchedules.push(newSchedule);
         }
-        emit AddVestingSchedule(vestingTime, vestingAlloc);
+        emit AddVestingSchedule(vestingSchedules.length - 1, vestingTime, vestingAlloc);
+    }
+
+    function getVestingScheduleLength() public view returns(uint256) {
+        return vestingSchedules.length;
+    }
+
+    function updateVestingSchedule (uint256 id, uint256 vestingTime, uint256 vestingAlloc) public onlyOwner {
+        require(id < vestingSchedules.length, "id invalid");
+        require(vestingTime > block.timestamp && vestingTime > harvestTime, "vestingTime invalid");
+        VestingSchedule storage schedule = vestingSchedules[id];
+        require(schedule.vestingTime > block.timestamp, "Schedule was happened");
+        if (vestingSchedules.length > id + 1) {
+            require(vestingTime < vestingSchedules[id + 1].vestingTime, "next time wrong");
+        }
+        if (vestingSchedules.length > 1 && id > 0) {
+            require(vestingTime > vestingSchedules[id - 1].vestingTime, "previous time wrong");
+        }
+        (bool valid, uint256 newRemaining) = vestingAllocRemaining.add(schedule.vestingAllocation).trySub(vestingAlloc);
+        require(valid, "allocation invalid!");
+        vestingAllocRemaining = newRemaining;
+        schedule.vestingTime = vestingTime;
+        schedule.vestingAllocation = vestingAlloc;
+        emit UpdateVestingSchedule(id, vestingTime, vestingAlloc);
     }
 
     function setSnapshotFrom (uint256 id) public onlyOwner {
@@ -381,7 +410,7 @@ contract IDOVesting is ReentrancyGuard, Ownable, Pausable {
 
     function getCurrentValidVestingSchedule () public view returns (uint256 id) {
         for (uint256 i = 0; i < vestingSchedules.length; i++) {
-            if (vestingSchedules[i].vestingTime >= block.timestamp) {
+            if (vestingSchedules[i].vestingTime < block.timestamp) {
                 id = i + 1;
             }
         }
