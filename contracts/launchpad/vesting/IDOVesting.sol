@@ -138,7 +138,7 @@ contract IDOVesting is ReentrancyGuard, Ownable, Pausable {
     }
 
     function setVestingSchedule (uint256 vestingTime, uint256 vestingAlloc) public onlyOwner {
-        require(vestingTime > block.timestamp && vestingTime > harvestTime && vestingAlloc <= ALLOCATION_PRECISION, "agrs invalid");
+        require(vestingTime > block.timestamp && vestingTime >= harvestTime && vestingAlloc <= ALLOCATION_PRECISION, "agrs invalid");
         require(vestingAlloc <= vestingAllocRemaining, "allocation overload");
         vestingAllocRemaining -= vestingAlloc;
         VestingSchedule memory newSchedule = VestingSchedule({
