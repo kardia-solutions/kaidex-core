@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
+import "./interfaces/IMinter.sol";
 import "../../libraries/TransferHelper.sol";
 
 
@@ -21,7 +21,7 @@ contract INO is Ownable, Pausable, ReentrancyGuard {
 
     uint256 public constant NFT_PRICE = 5 * 10**18;
 
-    address public minter;
+    IMinter public minter;
     address public buyToken; // The currency used to buy NFT
 
     // address => user info
@@ -44,8 +44,9 @@ contract INO is Ownable, Pausable, ReentrancyGuard {
     ) {
         require(_buyToken != address(0) && _minter != address(0), "Address invalid");
         require(_endTime > _startTime && startTime > block.timestamp, "Time is invalid");
+        require(IMinter(minter).isMinter(), "minter is invalid");
         buyToken = _buyToken;
-        minter = _minter;
+        minter = IMinter(_minter);
         startTime = _startTime;
         endTime = _endTime;
     }
@@ -92,8 +93,8 @@ contract INO is Ownable, Pausable, ReentrancyGuard {
     }
 
     function setMinter (address _newMinter) public onlyOwner {
-        require(_newMinter != address(0), "Minter is invalid");
-        minter = _newMinter;
+        require(IMinter(_newMinter).isMinter(), "minter is invalid");
+        minter = IMinter(_newMinter);
     }
 
     function emergencyWithdraw(address token, address payable to)
