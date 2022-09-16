@@ -589,7 +589,9 @@ interface IERC20 {
 pragma solidity ^0.8.0;
 interface IMinterAdapter {
     function isMinter() external view returns (bool);    
-    function mint() external returns(bool);
+    function mint(address receiver) external returns(bool);
+    function maximunTicketByUser (address userAddr) external view returns(uint256);
+    function maximunNFTSales () external view returns (uint256);
 }
 
 
@@ -657,19 +659,14 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
         uint8 ticket;
         uint8 usedTicket;
     }
-
-    uint256 public constant NFT_PRICE = 5 * 10**18;
-    uint8 public constant MAXIMUM_TICKET_PER_USER = 10;
-    uint8 public constant MAXIMUM_TICKET = 100;
-
-    IMinterAdapter public minter;
+    uint256 public constant NFT_PRICE = 5*10**18;
+    address public minterAdapter;
     address public buyToken; // The currency used to buy NFT
     // address => user info
     mapping(address => UserInfo) public users;
-    uint256 public totalUsers;
-    uint256 public totalTicket;
-    uint256 public totalUsedTicked;
-
+    uint256 public totalUsers; // Total user bought
+    uint256 public totalTicket;  // Total nft bought
+    uint256 public totalUsedTicked;  // Total nft claimed
     uint256 public startTime;
     uint256 public endTime;
 
@@ -683,16 +680,12 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
         uint256 _endTime
     ) {
         require(
-            _buyToken != address(0) && _minter != address(0),
-            "Address invalid"
-        );
-        require(
-            _endTime > _startTime && startTime > block.timestamp,
+            _endTime > _startTime && _startTime > block.timestamp,
             "Time is invalid"
         );
-        require(IMinterAdapter(minter).isMinter(), "minter is invalid");
+        require(IMinterAdapter(_minter).isMinter(), "minter is invalid");
         buyToken = _buyToken;
-        minter = IMinterAdapter(_minter);
+        minterAdapter = _minter;
         startTime = _startTime;
         endTime = _endTime;
     }
@@ -704,8 +697,8 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
             "Buy time is invalid"
         );
         require(
-            users[_msgSender()].ticket + _ticket <= MAXIMUM_TICKET_PER_USER &&
-                totalTicket + _ticket <= MAXIMUM_TICKET,
+            users[_msgSender()].ticket + _ticket <= getMaximunTicketByUser(_msgSender()) &&
+                totalTicket + _ticket <= getMaximunTicketSales(),
             "Ticket number is invalid"
         );
         _;
@@ -751,8 +744,8 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
 
     function claim() public whenNotPaused nonReentrant satisfyClaimCondition {
         // mint nft
-        bool success = IMinterAdapter(minter).mint();
-        require(success, "mint successfully");
+        bool success = IMinterAdapter(minterAdapter).mint(_msgSender());
+        require(success, "mint falied");
         users[_msgSender()].usedTicket++;
         totalUsedTicked++;
         emit Claim(_msgSender());
@@ -760,7 +753,17 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
 
     function setMinter(address _newMinter) public onlyOwner {
         require(IMinterAdapter(_newMinter).isMinter(), "minter is invalid");
-        minter = IMinterAdapter(_newMinter);
+        minterAdapter = _newMinter;
+    }
+
+    function setStartTime (uint256 newStartTime) public onlyOwner {
+        require(newStartTime > block.timestamp && newStartTime < endTime, "Time is invalid!!");
+        startTime = newStartTime;
+    }
+
+    function setEndTime (uint256 newEndTime) public onlyOwner {
+        require(newEndTime > block.timestamp && newEndTime > startTime && endTime > block.timestamp, "Time is invalid!!");
+        startTime = newEndTime;
     }
 
     function emergencyWithdraw(address token, address payable to)
@@ -784,6 +787,14 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
                 _withdraw
             );
         }
+    }
+
+    function getMaximunTicketByUser (address userAddr) public view returns (uint256) {
+        return IMinterAdapter(minterAdapter).maximunTicketByUser(userAddr);
+    }
+
+    function getMaximunTicketSales () public view returns (uint256) {
+        return IMinterAdapter(minterAdapter).maximunNFTSales();
     }
 
     function pause() public onlyOwner {

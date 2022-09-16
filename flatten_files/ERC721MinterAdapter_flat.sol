@@ -6,7 +6,9 @@
 pragma solidity ^0.8.0;
 interface IMinterAdapter {
     function isMinter() external view returns (bool);    
-    function mint() external returns(bool);
+    function mint(address receiver) external returns(bool);
+    function maximunTicketByUser (address userAddr) external view returns(uint256);
+    function maximunNFTSales () external view returns (uint256);
 }
 
 
@@ -295,7 +297,7 @@ interface IERC721 is IERC165 {
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 interface IMinter {  
-    function mint() external;
+    function mint(address receiver) external returns (uint256);
 }
 
 
@@ -312,6 +314,7 @@ contract ERC721MinterAdapter is IMinterAdapter, Ownable {
 
     address public inoContract;
     IMinter public erc721NFTContract;
+    uint256 public constant MAX_NFT_SALES = 1000;
 
     constructor(address nft){
         require(nft != address(0), "address is invalid");
@@ -333,8 +336,18 @@ contract ERC721MinterAdapter is IMinterAdapter, Ownable {
         return true;
     }
 
-    function mint() external override onlyINO returns(bool)  {
-        erc721NFTContract.mint();
-        return true;
+    function mint(address receiver) external override onlyINO returns(bool)  {
+        uint256 tokenId = erc721NFTContract.mint(receiver);
+        return tokenId > 0 ? true : false;
+    }
+
+    // maximum nft amount user can mint
+    function maximunTicketByUser (address userAddr) external view override returns(uint256) {
+        return 10;
+    }
+
+    // Maximun NFT sales
+    function maximunNFTSales () external view override returns (uint256) {
+        return MAX_NFT_SALES;
     }
 }
