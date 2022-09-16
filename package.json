@@ -27,6 +27,7 @@
     "deploy-kdx-ido": "npx hardhat run --network kai scripts/whitelist-ido.js",
     "deploy-ido-vesting": "npx hardhat run --network kai scripts/ido-vesting.js",
     "deploy-erc721-market": "npx hardhat run --network kai scripts/erc721-market.js",
+    "deploy-ino": "npx hardhat run --network kai scripts/ino.js",
     "test-masterchef": "npx hardhat test test/masterchef-test.js",
     "test-masterchefv2": "npx hardhat test test/masterchefv2-test.js",
     "test-stKdx": "npx hardhat test test/stKDX-test.js",
@@ -50,7 +51,8 @@
     "flat-trans-swapper": "npx hardhat flatten contracts/crosschain-swap/TransferSwapper.sol > flatten_files/TransferSwapper_flat.sol",
     "flat-anyswap-adapter": "npx hardhat flatten contracts/crosschain-swap/bridge/AnyswapAdapter.sol > flatten_files/AnyswapAdapter_flat.sol",
     "flat-erc721-market": "npx hardhat flatten contracts/nft-marketplace/ERC721NFTMarket.sol > flatten_files/ERC721NFTMarket_flat.sol",
-    "flat-ido-vesting": "npx hardhat flatten contracts/launchpad/vesting/IDOVesting.sol > flatten_files/IDOVesting_flat.sol"
+    "flat-ido-vesting": "npx hardhat flatten contracts/launchpad/vesting/IDOVesting.sol > flatten_files/IDOVesting_flat.sol",
+    "flat-ino": "npx hardhat flatten contracts/nft-marketplace/INO/ERC721INO.sol > flatten_files/ERC721INO_flat.sol && npx hardhat flatten contracts/nft-marketplace/INO/ERC721MinterAdapter.sol > flatten_files/ERC721MinterAdapter_flat.sol"
   },
   "dependencies": {
     "@boringcrypto/boring-solidity": "github:boringcrypto/BoringSolidity",

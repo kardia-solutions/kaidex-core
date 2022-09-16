@@ -4,22 +4,21 @@
   "sourceName": "contracts/nft-marketplace/INO/interfaces/IMinter.sol",
   "abi": [
     {
-      "inputs": [],
-      "name": "isMinter",
-      "outputs": [
+      "inputs": [
         {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
+          "internalType": "address",
+          "name": "receiver",
+          "type": "address"
         }
       ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
       "name": "mint",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     }
