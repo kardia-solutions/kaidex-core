@@ -40,12 +40,12 @@ contract ERC721MinterAdapter is IMinterAdapter, Ownable {
     }
 
     // maximum nft amount user can mint
-    function maximunTicketByUser (address userAddr) external view override returns(uint256) {
+    function maximumTicketByUser (address userAddr) external view override returns(uint256) {
         return 10;
     }
 
-    // Maximun NFT sales
-    function maximunNFTSales () external view override returns (uint256) {
+    // Maximum NFT sales
+    function maximumNFTSales () external view override returns (uint256) {
         return MAX_NFT_SALES;
     }
 }

@@ -54,8 +54,8 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
             "Buy time is invalid"
         );
         require(
-            users[_msgSender()].ticket + _ticket <= getMaximunTicketByUser(_msgSender()) &&
-                totalTicket + _ticket <= getMaximunTicketSales(),
+            users[_msgSender()].ticket + _ticket <= getMaximumTicketByUser(_msgSender()) &&
+                totalTicket + _ticket <= getMaximumTicketSales(),
             "Ticket number is invalid"
         );
         _;
@@ -146,12 +146,12 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
         }
     }
 
-    function getMaximunTicketByUser (address userAddr) public view returns (uint256) {
-        return IMinterAdapter(minterAdapter).maximunTicketByUser(userAddr);
+    function getMaximumTicketByUser (address userAddr) public view returns (uint256) {
+        return IMinterAdapter(minterAdapter).maximumTicketByUser(userAddr);
     }
 
-    function getMaximunTicketSales () public view returns (uint256) {
-        return IMinterAdapter(minterAdapter).maximunNFTSales();
+    function getMaximumTicketSales () public view returns (uint256) {
+        return IMinterAdapter(minterAdapter).maximumNFTSales();
     }
 
     function pause() public onlyOwner {

@@ -18,7 +18,7 @@
     },
     {
       "inputs": [],
-      "name": "maximunNFTSales",
+      "name": "maximumNFTSales",
       "outputs": [
         {
           "internalType": "uint256",
@@ -37,7 +37,7 @@
           "type": "address"
         }
       ],
-      "name": "maximunTicketByUser",
+      "name": "maximumTicketByUser",
       "outputs": [
         {
           "internalType": "uint256",
