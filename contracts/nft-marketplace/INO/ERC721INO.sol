@@ -23,7 +23,7 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
     mapping(address => UserInfo) public users;
     uint256 public totalUsers; // Total user bought
     uint256 public totalTicket;  // Total nft bought
-    uint256 public totalUsedTicked;  // Total nft claimed
+    uint256 public totalUsedTicket;  // Total nft claimed
     uint256 public startTime;
     uint256 public endTime;
 
@@ -104,7 +104,7 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
         bool success = IMinterAdapter(minterAdapter).mint(_msgSender());
         require(success, "mint falied");
         users[_msgSender()].usedTicket++;
-        totalUsedTicked++;
+        totalUsedTicket++;
         emit Claim(_msgSender());
     }
 
