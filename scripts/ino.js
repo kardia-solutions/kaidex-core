@@ -6,8 +6,11 @@
 const hre = require("hardhat");
 
 const _buyToken = "0x0000000000000000000000000000000000000000"; // KAI
-const _startTime = "1663317600";
-const _endTime = "1663321200";
+const _tier = "0x104D8e975600a4c7C93faD7850F6927964B0aa94";
+const _snapshotForm = 1;
+const _snapshotTo = 3
+const _startTime = "1663837200";
+const _endTime = "1663844400";
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
@@ -25,7 +28,7 @@ async function main() {
 
   // Deploy minter adapter
   const ERC721MinterAdapter = await hre.ethers.getContractFactory("ERC721MinterAdapter");
-  const erc721MinterAdapter = await ERC721MinterAdapter.deploy(nftMockup.address, { gasLimit: 30000000 })
+  const erc721MinterAdapter = await ERC721MinterAdapter.deploy(nftMockup.address, _tier, _snapshotForm, _snapshotTo, { gasLimit: 30000000 })
   await erc721MinterAdapter.deployed();
   console.log("ERC721MinterAdapter deployed to:", erc721MinterAdapter.address);
 

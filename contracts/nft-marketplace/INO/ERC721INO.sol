@@ -154,6 +154,18 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
         return IMinterAdapter(minterAdapter).maximumNFTSales();
     }
 
+    function getSnapshotFrom () public view returns (uint256) {
+        return IMinterAdapter(minterAdapter).getSnapshotFrom();
+    }
+
+    function getSnapshotTo () public view returns (uint256) {
+        return IMinterAdapter(minterAdapter).getSnapshotTo();
+    }
+
+    function getAllocationByTier (uint256 _tier) public view returns (uint256) {
+        return IMinterAdapter(minterAdapter).getAllocationByTier(_tier);
+    }
+
     function pause() public onlyOwner {
         _pause();
     }
