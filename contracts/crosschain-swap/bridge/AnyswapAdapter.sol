@@ -3,10 +3,14 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import "../interfaces/IBridgeAdapter.sol";
 import "../interfaces/IBridgeAnyswap.sol";
 
 contract AnyswapAdapter is IBridgeAdapter, Ownable {
+    using SafeERC20 for IERC20;
+
     address public mainContract;
     mapping(address => bool) public supportedRouters;
     mapping(bytes32 => bool) public transfers;
@@ -48,17 +52,22 @@ contract AnyswapAdapter is IBridgeAdapter, Ownable {
     ) external payable onlyMainContract override returns (bytes memory bridgeResp) {
         AnyswapParams memory params = abi.decode((_bridgeParams), (AnyswapParams));
         require(supportedRouters[params.router], "illegal router");
-        
+
         bytes32 transferId = keccak256(
             abi.encodePacked(_receiver, _token, _amount, _dstChainId, params.nonce, uint64(block.chainid))
         );
         require(transfers[transferId] == false, "transfer exists");
         transfers[transferId] = true;
 
-        IERC20(_token).transferFrom(msg.sender, address(this), _amount);
-        IERC20(_token).approve(params.router, _amount);
-        IBridgeAnyswap(params.router).anySwapOutUnderlying(params.anyToken, _receiver, _amount, _dstChainId);
-        
+        IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
+        IERC20(_token).safeApprove(params.router, _amount);
+        if (IUnderlying(params.anyToken).underlying() != address(0)) {
+            IBridgeAnyswap(params.router).anySwapOutUnderlying(params.anyToken, _receiver, _amount, _dstChainId);
+        } else {
+            IBridgeAnyswap(params.router).anySwapOut(params.anyToken, _receiver, _amount, _dstChainId);
+        }
+        IERC20(_token).safeApprove(params.router, 0);
+
         return abi.encodePacked(transferId);
     }
 

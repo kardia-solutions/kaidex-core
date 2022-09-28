@@ -12,6 +12,11 @@ import "./libs/Byte.sol";
 contract Swapper is CodecRegistry, DexRegistry {
     using SafeERC20 for IERC20;
 
+    // Externally encoded swaps are not encoded by backend, and are differenciated by the target dex address.
+    mapping(address => bool) public externalSwap;
+
+    event ExternalSwapUpdated(address dex, bool enabled);
+
     constructor(
         string[] memory _funcSigs,
         address[] memory _codecs,
@@ -80,4 +85,46 @@ contract Swapper is CodecRegistry, DexRegistry {
             sumAmtOut += balAfter - balBefore;
         }
     }
+
+    // Checks whether a swap is an "externally encoded swap"
+    function isExternalSwap(ICodec.SwapDescription memory _swap) internal view returns (bool ok) {
+        require(dexRegistry[_swap.dex][Byte.bytesToBytes4(_swap.data)], "unsupported dex");
+        return externalSwap[_swap.dex];
+    }
+
+    function setExternalSwap(address _dex, bool _enabled) external onlyOwner {
+        _setExternalSwap(_dex, _enabled);
+        emit ExternalSwapUpdated(_dex, _enabled);
+    }
+
+    function _setExternalSwap(address _dex, bool _enabled) private {
+        bool enabled = externalSwap[_dex];
+        require(enabled != _enabled, "nop");
+        externalSwap[_dex] = _enabled;
+    }
+
+    /**
+     * @notice Executes the externally encoded swaps
+     * @dev This function is intended to be used on src chain only
+     * @dev This function immediately fails (return false) if any swaps fail. There is no "partial fill" on src chain
+     * @param _swap. this function assumes that the swaps are already sanitized
+     * @return ok whether the operation is successful
+     * @return amtOut the amount gained from swapping
+     */
+    function executeExternalSwap(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        ICodec.SwapDescription memory _swap
+    ) internal returns (bool ok, uint256 amtOut) {
+        IERC20(tokenIn).safeIncreaseAllowance(_swap.dex, amountIn);
+        uint256 balBefore = IERC20(tokenOut).balanceOf(address(this));
+        (ok, ) = _swap.dex.call(_swap.data);
+        if (!ok) {
+            return (false, 0);
+        }
+        uint256 balAfter = IERC20(tokenOut).balanceOf(address(this));
+        amtOut = balAfter - balBefore;
+    }
+
 }
