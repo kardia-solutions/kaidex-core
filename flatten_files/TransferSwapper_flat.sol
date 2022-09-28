@@ -851,6 +851,8 @@ library Types {
         // IMPORTANT: amountIn & tokenIn is completely ignored if src chain has a swap
         uint256 amountIn;
         address tokenIn;
+        // only used if the swap on the src chain is an external swap
+        address bridgeTokenIn;
         address dstTokenOut; // the final output token, emitted in event for display purpose only
         // in case of multi route swaps, whether to allow the successful swaps to go through
         // and sending the amountIn of the failed swaps back to user
@@ -1138,11 +1140,12 @@ abstract contract DexRegistry is Ownable {
 
     function setSupportedDex(
         address _dex,
-        bytes4 _selector,
+        string memory _supportedFuncs,
         bool _enabled
     ) external onlyOwner {
-        _setSupportedDex(_dex, _selector, _enabled);
-        emit SupportedDexUpdated(_dex, _selector, _enabled);
+        bytes4 selector = bytes4(keccak256(bytes(_supportedFuncs)));
+        _setSupportedDex(_dex, selector, _enabled);
+        emit SupportedDexUpdated(_dex, selector, _enabled);
     }
 
     function _setSupportedDex(
@@ -1168,6 +1171,11 @@ pragma solidity ^0.8.0;
 
 contract Swapper is CodecRegistry, DexRegistry {
     using SafeERC20 for IERC20;
+
+    // Externally encoded swaps are not encoded by backend, and are differenciated by the target dex address.
+    mapping(address => bool) public externalSwap;
+
+    event ExternalSwapUpdated(address dex, bool enabled);
 
     constructor(
         string[] memory _funcSigs,
@@ -1237,6 +1245,48 @@ contract Swapper is CodecRegistry, DexRegistry {
             sumAmtOut += balAfter - balBefore;
         }
     }
+
+    // Checks whether a swap is an "externally encoded swap"
+    function isExternalSwap(ICodec.SwapDescription memory _swap) internal view returns (bool ok) {
+        require(dexRegistry[_swap.dex][Byte.bytesToBytes4(_swap.data)], "unsupported dex");
+        return externalSwap[_swap.dex];
+    }
+
+    function setExternalSwap(address _dex, bool _enabled) external onlyOwner {
+        _setExternalSwap(_dex, _enabled);
+        emit ExternalSwapUpdated(_dex, _enabled);
+    }
+
+    function _setExternalSwap(address _dex, bool _enabled) private {
+        bool enabled = externalSwap[_dex];
+        require(enabled != _enabled, "nop");
+        externalSwap[_dex] = _enabled;
+    }
+
+    /**
+     * @notice Executes the externally encoded swaps
+     * @dev This function is intended to be used on src chain only
+     * @dev This function immediately fails (return false) if any swaps fail. There is no "partial fill" on src chain
+     * @param _swap. this function assumes that the swaps are already sanitized
+     * @return ok whether the operation is successful
+     * @return amtOut the amount gained from swapping
+     */
+    function executeExternalSwap(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        ICodec.SwapDescription memory _swap
+    ) internal returns (bool ok, uint256 amtOut) {
+        IERC20(tokenIn).safeIncreaseAllowance(_swap.dex, amountIn);
+        uint256 balBefore = IERC20(tokenOut).balanceOf(address(this));
+        (ok, ) = _swap.dex.call(_swap.data);
+        if (!ok) {
+            return (false, 0);
+        }
+        uint256 balAfter = IERC20(tokenOut).balanceOf(address(this));
+        amtOut = balAfter - balBefore;
+    }
+
 }
 
 
@@ -1323,35 +1373,43 @@ contract TransferSwapper is ReentrancyGuard, BridgeRegistry, Swapper {
         // a request needs to incur a swap, a transfer, or both. otherwise it's a nop and we revert early to save gas
         require(_srcSwaps.length != 0 || _desc.dstChainId != uint64(block.chainid), "nop");
         require(_srcSwaps.length != 0 || (_desc.amountIn != 0 && _desc.tokenIn != address(0)), "nop");
-        // swapping on the dst chain requires message passing. only integrated with bridge for now
+        // swapping on the dst chain requires message passing. only integrated with multichain for now
         bytes32 bridgeProviderHash = keccak256(bytes(_desc.bridgeProvider));
-        require(_dstSwaps.length == 0 || bridgeProviderHash == MULTICHAIN_PROVIDER_HASH, "bridge does not support msg");
+        require(
+            (_dstSwaps.length == 0) || bridgeProviderHash == MULTICHAIN_PROVIDER_HASH,
+            "bridge does not support msg"
+        );
 
-        IBridgeAdapter bridge = bridges[bridgeProviderHash]; 
+        IBridgeAdapter bridge = bridges[bridgeProviderHash];
         // if not DirectSwap, the bridge provider should be a valid one
         require(_desc.dstChainId == uint64(block.chainid) || address(bridge) != address(0), "unsupported bridge");
 
         uint256 amountIn = _desc.amountIn;
         ICodec[] memory codecs;
-        address srcToken = _desc.tokenIn;
-        address bridgeToken = _desc.tokenIn;
 
+        address srcTokenIn = _desc.tokenIn;
+        address srcTokenOut = _desc.tokenIn;
         if (_srcSwaps.length != 0) {
-            (amountIn, srcToken, bridgeToken, codecs) = sanitizeSwaps(_srcSwaps);
+            if (isExternalSwap(_srcSwaps[0])) {
+                srcTokenOut = _desc.bridgeTokenIn;
+            } else {
+                (amountIn, srcTokenIn, srcTokenOut, codecs) = sanitizeSwaps(_srcSwaps);
+            }
+            require(srcTokenIn != srcTokenOut, "token in/out must not equal if exists swaps");
         }
         if (_desc.nativeIn) {
-            require(srcToken == nativeWrap, "tkin no nativeWrap");
+            require(srcTokenIn == nativeWrap, "tkin no nativeWrap");
             require(msg.value >= amountIn, "insfcnt amt"); // insufficient amount
             IWETH(nativeWrap).deposit{value: amountIn}();
         } else {
-            IERC20(srcToken).safeTransferFrom(msg.sender, address(this), amountIn);
+            IERC20(srcTokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
         }
-        _swapAndSend(srcToken, bridgeToken, amountIn, _desc, _srcSwaps, _dstSwaps, codecs);
+        _swapAndSend(srcTokenIn, srcTokenOut, amountIn, _desc, _srcSwaps, _dstSwaps, codecs);
     }
 
     function _swapAndSend(
-        address srcToken,
-        address bridgeToken,
+        address _srcToken,
+        address _bridgeToken,
         uint256 _amountIn,
         Types.TransferDescription memory _desc,
         ICodec.SwapDescription[] memory _srcSwaps,
@@ -1362,24 +1420,28 @@ contract TransferSwapper is ReentrancyGuard, BridgeRegistry, Swapper {
         uint256 amountOut = _amountIn;
         if (_srcSwaps.length != 0) {
             bool ok;
-            (ok, amountOut) = executeSwaps(_srcSwaps, _codecs);
-            require(ok, "swap fail");
+            if (isExternalSwap(_srcSwaps[0])) {
+                // for external swaps, it is only possible that there is one element in the array
+                (ok, amountOut) = executeExternalSwap(_srcToken, _bridgeToken, _amountIn, _srcSwaps[0]);
+            } else {
+                (ok, amountOut) = executeSwaps(_srcSwaps, _codecs);
+                require(ok, "swap fail");
+            }
         }
         bytes32 id = _computeId(_desc.receiver, _desc.nonce);
         // direct send if needed
         if (_desc.dstChainId == uint64(block.chainid)) {
-            _sendToken(bridgeToken, amountOut, _desc.receiver, _desc.nativeOut);
-            emit DirectSwap(id, _amountIn, srcToken, amountOut, bridgeToken);
+            _sendToken(_bridgeToken, amountOut, _desc.receiver, _desc.nativeOut);
+            emit DirectSwap(id, _amountIn, _srcToken, amountOut, _bridgeToken);
             return;
         }
-
-        _transfer(id, srcToken, bridgeToken, _desc, _dstSwaps, _amountIn, amountOut);
+        _transfer(id, _srcToken, _bridgeToken, _desc, _dstSwaps, _amountIn, amountOut);
     }
 
     function _transfer(
         bytes32 _id,
-        address srcToken,
-        address bridgeToken,
+        address srcTokenIn,
+        address srcTokenOut,
         Types.TransferDescription memory _desc,
         ICodec.SwapDescription[] memory _dstSwaps,
         uint256 _amountIn,
@@ -1390,13 +1452,13 @@ contract TransferSwapper is ReentrancyGuard, BridgeRegistry, Swapper {
         bytes memory bridgeResp;
         {
             IBridgeAdapter bridge = bridges[keccak256(bytes(_desc.bridgeProvider))];
-            IERC20(bridgeToken).safeIncreaseAllowance(address(bridge), _amountOut);
+            IERC20(srcTokenOut).safeIncreaseAllowance(address(bridge), _amountOut);
             bytes memory requestMessage = _encodeRequestMessage(_id, _desc, _dstSwaps);
             bridgeResp = bridge.bridge(
                 _desc.dstChainId,
                 bridgeOutReceiver,
                 _amountOut,
-                bridgeToken,
+                srcTokenOut,
                 _desc.bridgeParams,
                 requestMessage
             );
@@ -1406,10 +1468,10 @@ contract TransferSwapper is ReentrancyGuard, BridgeRegistry, Swapper {
             bridgeResp,
             _desc.dstChainId,
             _amountIn,
-            srcToken,
+            srcTokenIn,
             _desc.dstTokenOut,
             bridgeOutReceiver,
-            bridgeToken,
+            srcTokenOut,
             _amountOut,
             _desc.bridgeProvider
         );
