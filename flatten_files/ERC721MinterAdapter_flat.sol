@@ -6,13 +6,16 @@
 pragma solidity ^0.8.0;
 interface IMinterAdapter {
     function isMinter() external view returns (bool);    
-    function mint(address receiver) external returns(bool);
-    function maximunTicketByUser (address userAddr) external view returns(uint256);
-    function maximunNFTSales () external view returns (uint256);
+    function mint(address receiver) external returns(uint256);
+    function maximumTicketByUser (address userAddr) external view returns(uint256);
+    function maximumNFTSales () external view returns (uint256);
+    function getSnapshotFrom() external view returns(uint256);
+    function getSnapshotTo() external view returns(uint256);
+    function getAllocationByTier(uint256 _tier) external view returns(uint256);
 }
 
 
-// File @openzeppelin/contracts/utils/Context.sol@v4.5.0
+// File @openzeppelin/contracts/utils/Context.sol@v4.7.3
 
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
@@ -40,10 +43,10 @@ abstract contract Context {
 }
 
 
-// File @openzeppelin/contracts/access/Ownable.sol@v4.5.0
+// File @openzeppelin/contracts/access/Ownable.sol@v4.7.3
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.1 (access/Ownable.sol)
+// OpenZeppelin Contracts (last updated v4.7.0) (access/Ownable.sol)
 
 pragma solidity ^0.8.0;
 
@@ -72,6 +75,14 @@ abstract contract Ownable is Context {
     }
 
     /**
+     * @dev Throws if called by any account other than the owner.
+     */
+    modifier onlyOwner() {
+        _checkOwner();
+        _;
+    }
+
+    /**
      * @dev Returns the address of the current owner.
      */
     function owner() public view virtual returns (address) {
@@ -79,11 +90,10 @@ abstract contract Ownable is Context {
     }
 
     /**
-     * @dev Throws if called by any account other than the owner.
+     * @dev Throws if the sender is not the owner.
      */
-    modifier onlyOwner() {
+    function _checkOwner() internal view virtual {
         require(owner() == _msgSender(), "Ownable: caller is not the owner");
-        _;
     }
 
     /**
@@ -118,7 +128,7 @@ abstract contract Ownable is Context {
 }
 
 
-// File @openzeppelin/contracts/utils/introspection/IERC165.sol@v4.5.0
+// File @openzeppelin/contracts/utils/introspection/IERC165.sol@v4.7.3
 
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts v4.4.1 (utils/introspection/IERC165.sol)
@@ -147,10 +157,10 @@ interface IERC165 {
 }
 
 
-// File @openzeppelin/contracts/token/ERC721/IERC721.sol@v4.5.0
+// File @openzeppelin/contracts/token/ERC721/IERC721.sol@v4.7.3
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.1 (token/ERC721/IERC721.sol)
+// OpenZeppelin Contracts (last updated v4.7.0) (token/ERC721/IERC721.sol)
 
 pragma solidity ^0.8.0;
 
@@ -188,6 +198,26 @@ interface IERC721 is IERC165 {
     function ownerOf(uint256 tokenId) external view returns (address owner);
 
     /**
+     * @dev Safely transfers `tokenId` token from `from` to `to`.
+     *
+     * Requirements:
+     *
+     * - `from` cannot be the zero address.
+     * - `to` cannot be the zero address.
+     * - `tokenId` token must exist and be owned by `from`.
+     * - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}.
+     * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
+     *
+     * Emits a {Transfer} event.
+     */
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes calldata data
+    ) external;
+
+    /**
      * @dev Safely transfers `tokenId` token from `from` to `to`, checking first that contract recipients
      * are aware of the ERC721 protocol to prevent tokens from being forever locked.
      *
@@ -196,7 +226,7 @@ interface IERC721 is IERC165 {
      * - `from` cannot be the zero address.
      * - `to` cannot be the zero address.
      * - `tokenId` token must exist and be owned by `from`.
-     * - If the caller is not `from`, it must be have been allowed to move this token by either {approve} or {setApprovalForAll}.
+     * - If the caller is not `from`, it must have been allowed to move this token by either {approve} or {setApprovalForAll}.
      * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
      *
      * Emits a {Transfer} event.
@@ -243,15 +273,6 @@ interface IERC721 is IERC165 {
     function approve(address to, uint256 tokenId) external;
 
     /**
-     * @dev Returns the account approved for `tokenId` token.
-     *
-     * Requirements:
-     *
-     * - `tokenId` must exist.
-     */
-    function getApproved(uint256 tokenId) external view returns (address operator);
-
-    /**
      * @dev Approve or remove `operator` as an operator for the caller.
      * Operators can call {transferFrom} or {safeTransferFrom} for any token owned by the caller.
      *
@@ -264,31 +285,20 @@ interface IERC721 is IERC165 {
     function setApprovalForAll(address operator, bool _approved) external;
 
     /**
+     * @dev Returns the account approved for `tokenId` token.
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist.
+     */
+    function getApproved(uint256 tokenId) external view returns (address operator);
+
+    /**
      * @dev Returns if the `operator` is allowed to manage all of the assets of `owner`.
      *
      * See {setApprovalForAll}
      */
     function isApprovedForAll(address owner, address operator) external view returns (bool);
-
-    /**
-     * @dev Safely transfers `tokenId` token from `from` to `to`.
-     *
-     * Requirements:
-     *
-     * - `from` cannot be the zero address.
-     * - `to` cannot be the zero address.
-     * - `tokenId` token must exist and be owned by `from`.
-     * - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}.
-     * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
-     *
-     * Emits a {Transfer} event.
-     */
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
-        bytes calldata data
-    ) external;
 }
 
 
@@ -301,11 +311,25 @@ interface IMinter {
 }
 
 
+// File contracts/interfaces/ITierSystem.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+pragma experimental ABIEncoderV2;
+
+interface ITierSystem {
+    function getTierFromTo (address _account, uint256 _snapshotIdFrom, uint256 _snapshotIdTo) external view returns(uint256);
+    function getTier (address _account) external view returns(uint256);
+    function getAllocationPoint(uint256 _tier) external view returns(uint256);
+}
+
+
 // File contracts/nft-marketplace/INO/ERC721MinterAdapter.sol
 
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
+
 
 
 
@@ -316,14 +340,45 @@ contract ERC721MinterAdapter is IMinterAdapter, Ownable {
     IMinter public erc721NFTContract;
     uint256 public constant MAX_NFT_SALES = 1000;
 
-    constructor(address nft){
+    // Tier system
+    ITierSystem public tierSystem;
+
+    // snapshot ids
+    uint256 snapshotFrom;
+    uint256 snapshotTo;
+
+    // Total NFT minted
+    uint256 public minted;
+
+    // Tier allocation
+    uint256[5] public tierAllocations = [1,2,4,8,15];
+
+    constructor(
+        address nft,
+        ITierSystem _tierSystem,
+        uint256 _snapshotFrom,
+        uint256 _snapshotTo
+    ){
         require(nft != address(0), "address is invalid");
         erc721NFTContract = IMinter(nft);
+        snapshotFrom = _snapshotFrom;
+        snapshotTo = _snapshotTo;
+        tierSystem = _tierSystem;
     }
 
     modifier onlyINO {
         require(msg.sender == inoContract, "Only call by ino contract");
         _;
+    }
+
+    function setSnapshotFrom (uint256 id) public onlyOwner {
+        require(id > 0, 'Id invalid');
+        snapshotFrom = id;
+    }
+
+    function setSnapshotTo (uint256 id) public onlyOwner {
+        require(id > 0, 'Id invalid');
+        snapshotTo = id;
     }
 
     function setINOContract (address _ino) public onlyOwner {
@@ -336,18 +391,36 @@ contract ERC721MinterAdapter is IMinterAdapter, Ownable {
         return true;
     }
 
-    function mint(address receiver) external override onlyINO returns(bool)  {
+    function mint(address receiver) external override onlyINO returns(uint256)  {
+        require(minted < MAX_NFT_SALES, "maximum!!");
         uint256 tokenId = erc721NFTContract.mint(receiver);
-        return tokenId > 0 ? true : false;
+        minted ++;
+        return tokenId;
     }
 
     // maximum nft amount user can mint
-    function maximunTicketByUser (address userAddr) external view override returns(uint256) {
-        return 10;
+    function maximumTicketByUser (address userAddr) external view override returns(uint256) {
+        uint256 tier = tierSystem.getTierFromTo(userAddr, snapshotFrom, snapshotTo);
+        if (tier == 0) return 0;
+        return tierAllocations[tier-1];
     }
 
-    // Maximun NFT sales
-    function maximunNFTSales () external view override returns (uint256) {
+    // Maximum NFT sales
+    function maximumNFTSales () external view override returns (uint256) {
         return MAX_NFT_SALES;
+    }
+
+
+    function getSnapshotFrom() external view override returns(uint256) {
+        return snapshotFrom;
+    }
+
+    function getSnapshotTo() external view override returns(uint256) {
+        return snapshotTo;
+    }
+
+    function getAllocationByTier(uint256 _tier) external view override returns(uint256) {
+        require(_tier > 0 && _tier <= 5, "Tier was invalid");
+        return tierAllocations[_tier - 1];
     }
 }

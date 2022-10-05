@@ -28,7 +28,7 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
     uint256 public endTime;
 
     event Buy(address indexed user, uint8 _ticket);
-    event Claim(address indexed user);
+    event Claim(address indexed user, uint256 tokenId);
 
     constructor(
         address _buyToken,
@@ -101,11 +101,11 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
 
     function claim() public whenNotPaused nonReentrant satisfyClaimCondition {
         // mint nft
-        bool success = IMinterAdapter(minterAdapter).mint(_msgSender());
-        require(success, "mint falied");
+        uint256 tokenId = IMinterAdapter(minterAdapter).mint(_msgSender());
+        require(tokenId > 0, "mint falied");
         users[_msgSender()].usedTicket++;
         totalUsedTicket++;
-        emit Claim(_msgSender());
+        emit Claim(_msgSender(), tokenId);
     }
 
     function setMinter(address _newMinter) public onlyOwner {
@@ -120,7 +120,7 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
 
     function setEndTime (uint256 newEndTime) public onlyOwner {
         require(newEndTime > block.timestamp && newEndTime > startTime && endTime > block.timestamp, "Time is invalid!!");
-        startTime = newEndTime;
+        endTime = newEndTime;
     }
 
     function emergencyWithdraw(address token, address payable to)

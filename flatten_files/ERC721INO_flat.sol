@@ -1,6 +1,6 @@
 // Sources flattened with hardhat v2.9.3 https://hardhat.org
 
-// File @openzeppelin/contracts/utils/Context.sol@v4.5.0
+// File @openzeppelin/contracts/utils/Context.sol@v4.7.3
 
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
@@ -28,10 +28,10 @@ abstract contract Context {
 }
 
 
-// File @openzeppelin/contracts/access/Ownable.sol@v4.5.0
+// File @openzeppelin/contracts/access/Ownable.sol@v4.7.3
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.1 (access/Ownable.sol)
+// OpenZeppelin Contracts (last updated v4.7.0) (access/Ownable.sol)
 
 pragma solidity ^0.8.0;
 
@@ -60,6 +60,14 @@ abstract contract Ownable is Context {
     }
 
     /**
+     * @dev Throws if called by any account other than the owner.
+     */
+    modifier onlyOwner() {
+        _checkOwner();
+        _;
+    }
+
+    /**
      * @dev Returns the address of the current owner.
      */
     function owner() public view virtual returns (address) {
@@ -67,11 +75,10 @@ abstract contract Ownable is Context {
     }
 
     /**
-     * @dev Throws if called by any account other than the owner.
+     * @dev Throws if the sender is not the owner.
      */
-    modifier onlyOwner() {
+    function _checkOwner() internal view virtual {
         require(owner() == _msgSender(), "Ownable: caller is not the owner");
-        _;
     }
 
     /**
@@ -106,10 +113,10 @@ abstract contract Ownable is Context {
 }
 
 
-// File @openzeppelin/contracts/security/Pausable.sol@v4.5.0
+// File @openzeppelin/contracts/security/Pausable.sol@v4.7.3
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.1 (security/Pausable.sol)
+// OpenZeppelin Contracts (last updated v4.7.0) (security/Pausable.sol)
 
 pragma solidity ^0.8.0;
 
@@ -143,13 +150,6 @@ abstract contract Pausable is Context {
     }
 
     /**
-     * @dev Returns true if the contract is paused, and false otherwise.
-     */
-    function paused() public view virtual returns (bool) {
-        return _paused;
-    }
-
-    /**
      * @dev Modifier to make a function callable only when the contract is not paused.
      *
      * Requirements:
@@ -157,7 +157,7 @@ abstract contract Pausable is Context {
      * - The contract must not be paused.
      */
     modifier whenNotPaused() {
-        require(!paused(), "Pausable: paused");
+        _requireNotPaused();
         _;
     }
 
@@ -169,8 +169,29 @@ abstract contract Pausable is Context {
      * - The contract must be paused.
      */
     modifier whenPaused() {
-        require(paused(), "Pausable: not paused");
+        _requirePaused();
         _;
+    }
+
+    /**
+     * @dev Returns true if the contract is paused, and false otherwise.
+     */
+    function paused() public view virtual returns (bool) {
+        return _paused;
+    }
+
+    /**
+     * @dev Throws if the contract is paused.
+     */
+    function _requireNotPaused() internal view virtual {
+        require(!paused(), "Pausable: paused");
+    }
+
+    /**
+     * @dev Throws if the contract is not paused.
+     */
+    function _requirePaused() internal view virtual {
+        require(paused(), "Pausable: not paused");
     }
 
     /**
@@ -199,7 +220,7 @@ abstract contract Pausable is Context {
 }
 
 
-// File @openzeppelin/contracts/security/ReentrancyGuard.sol@v4.5.0
+// File @openzeppelin/contracts/security/ReentrancyGuard.sol@v4.7.3
 
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts v4.4.1 (security/ReentrancyGuard.sol)
@@ -266,10 +287,10 @@ abstract contract ReentrancyGuard {
 }
 
 
-// File @openzeppelin/contracts/utils/math/SafeMath.sol@v4.5.0
+// File @openzeppelin/contracts/utils/math/SafeMath.sol@v4.7.3
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.1 (utils/math/SafeMath.sol)
+// OpenZeppelin Contracts (last updated v4.6.0) (utils/math/SafeMath.sol)
 
 pragma solidity ^0.8.0;
 
@@ -298,7 +319,7 @@ library SafeMath {
     }
 
     /**
-     * @dev Returns the substraction of two unsigned integers, with an overflow flag.
+     * @dev Returns the subtraction of two unsigned integers, with an overflow flag.
      *
      * _Available since v3.4._
      */
@@ -497,10 +518,10 @@ library SafeMath {
 }
 
 
-// File @openzeppelin/contracts/token/ERC20/IERC20.sol@v4.5.0
+// File @openzeppelin/contracts/token/ERC20/IERC20.sol@v4.7.3
 
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.5.0) (token/ERC20/IERC20.sol)
+// OpenZeppelin Contracts (last updated v4.6.0) (token/ERC20/IERC20.sol)
 
 pragma solidity ^0.8.0;
 
@@ -508,6 +529,20 @@ pragma solidity ^0.8.0;
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
 interface IERC20 {
+    /**
+     * @dev Emitted when `value` tokens are moved from one account (`from`) to
+     * another (`to`).
+     *
+     * Note that `value` may be zero.
+     */
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    /**
+     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
+     * a call to {approve}. `value` is the new allowance.
+     */
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+
     /**
      * @dev Returns the amount of tokens in existence.
      */
@@ -566,20 +601,6 @@ interface IERC20 {
         address to,
         uint256 amount
     ) external returns (bool);
-
-    /**
-     * @dev Emitted when `value` tokens are moved from one account (`from`) to
-     * another (`to`).
-     *
-     * Note that `value` may be zero.
-     */
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    /**
-     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
-     * a call to {approve}. `value` is the new allowance.
-     */
-    event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
 
@@ -589,9 +610,12 @@ interface IERC20 {
 pragma solidity ^0.8.0;
 interface IMinterAdapter {
     function isMinter() external view returns (bool);    
-    function mint(address receiver) external returns(bool);
-    function maximunTicketByUser (address userAddr) external view returns(uint256);
-    function maximunNFTSales () external view returns (uint256);
+    function mint(address receiver) external returns(uint256);
+    function maximumTicketByUser (address userAddr) external view returns(uint256);
+    function maximumNFTSales () external view returns (uint256);
+    function getSnapshotFrom() external view returns(uint256);
+    function getSnapshotTo() external view returns(uint256);
+    function getAllocationByTier(uint256 _tier) external view returns(uint256);
 }
 
 
@@ -666,12 +690,12 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
     mapping(address => UserInfo) public users;
     uint256 public totalUsers; // Total user bought
     uint256 public totalTicket;  // Total nft bought
-    uint256 public totalUsedTicked;  // Total nft claimed
+    uint256 public totalUsedTicket;  // Total nft claimed
     uint256 public startTime;
     uint256 public endTime;
 
     event Buy(address indexed user, uint8 _ticket);
-    event Claim(address indexed user);
+    event Claim(address indexed user, uint256 tokenId);
 
     constructor(
         address _buyToken,
@@ -697,8 +721,8 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
             "Buy time is invalid"
         );
         require(
-            users[_msgSender()].ticket + _ticket <= getMaximunTicketByUser(_msgSender()) &&
-                totalTicket + _ticket <= getMaximunTicketSales(),
+            users[_msgSender()].ticket + _ticket <= getMaximumTicketByUser(_msgSender()) &&
+                totalTicket + _ticket <= getMaximumTicketSales(),
             "Ticket number is invalid"
         );
         _;
@@ -744,11 +768,11 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
 
     function claim() public whenNotPaused nonReentrant satisfyClaimCondition {
         // mint nft
-        bool success = IMinterAdapter(minterAdapter).mint(_msgSender());
-        require(success, "mint falied");
+        uint256 tokenId = IMinterAdapter(minterAdapter).mint(_msgSender());
+        require(tokenId > 0, "mint falied");
         users[_msgSender()].usedTicket++;
-        totalUsedTicked++;
-        emit Claim(_msgSender());
+        totalUsedTicket++;
+        emit Claim(_msgSender(), tokenId);
     }
 
     function setMinter(address _newMinter) public onlyOwner {
@@ -763,7 +787,7 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
 
     function setEndTime (uint256 newEndTime) public onlyOwner {
         require(newEndTime > block.timestamp && newEndTime > startTime && endTime > block.timestamp, "Time is invalid!!");
-        startTime = newEndTime;
+        endTime = newEndTime;
     }
 
     function emergencyWithdraw(address token, address payable to)
@@ -789,12 +813,24 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
         }
     }
 
-    function getMaximunTicketByUser (address userAddr) public view returns (uint256) {
-        return IMinterAdapter(minterAdapter).maximunTicketByUser(userAddr);
+    function getMaximumTicketByUser (address userAddr) public view returns (uint256) {
+        return IMinterAdapter(minterAdapter).maximumTicketByUser(userAddr);
     }
 
-    function getMaximunTicketSales () public view returns (uint256) {
-        return IMinterAdapter(minterAdapter).maximunNFTSales();
+    function getMaximumTicketSales () public view returns (uint256) {
+        return IMinterAdapter(minterAdapter).maximumNFTSales();
+    }
+
+    function getSnapshotFrom () public view returns (uint256) {
+        return IMinterAdapter(minterAdapter).getSnapshotFrom();
+    }
+
+    function getSnapshotTo () public view returns (uint256) {
+        return IMinterAdapter(minterAdapter).getSnapshotTo();
+    }
+
+    function getAllocationByTier (uint256 _tier) public view returns (uint256) {
+        return IMinterAdapter(minterAdapter).getAllocationByTier(_tier);
     }
 
     function pause() public onlyOwner {

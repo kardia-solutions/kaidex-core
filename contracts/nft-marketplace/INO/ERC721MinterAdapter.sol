@@ -65,11 +65,11 @@ contract ERC721MinterAdapter is IMinterAdapter, Ownable {
         return true;
     }
 
-    function mint(address receiver) external override onlyINO returns(bool)  {
+    function mint(address receiver) external override onlyINO returns(uint256)  {
         require(minted < MAX_NFT_SALES, "maximum!!");
         uint256 tokenId = erc721NFTContract.mint(receiver);
         minted ++;
-        return tokenId > 0 ? true : false;
+        return tokenId;
     }
 
     // maximum nft amount user can mint
