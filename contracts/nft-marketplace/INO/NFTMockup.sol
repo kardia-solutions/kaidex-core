@@ -14,4 +14,8 @@ contract NFTMockup is ERC721("NFTMockup", "Mock") {
         _mint(receiver, newItemId);
         return newItemId;
     }
+
+    function _baseURI() internal view virtual override returns (string memory) {
+        return "https://be.sipher.xyz/api/sipher/v1.0/sc/tokenuri/";
+    }
 }

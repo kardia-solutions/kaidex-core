@@ -26,6 +26,11 @@ contract Whitelist is Ownable {
         }
     }
 
+    modifier onlyWhitelisted() {
+        require(whitelist[msg.sender], "not whitelisted");
+        _;
+    }
+
     /***
      * @dev add addresses to the whitelist
      * @param addrs addresses

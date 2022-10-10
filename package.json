@@ -25,6 +25,7 @@
     "deploy-rewarder": "npx hardhat run --network kai scripts/clone-rewarder.js",
     "deploy-ido": "npx hardhat run --network kai scripts/raisefund.js",
     "deploy-kdx-ido": "npx hardhat run --network kai scripts/whitelist-ido.js",
+    "deploy-whitelist-ido": "npx hardhat run --network kai scripts/whitelist2-ido.js",
     "deploy-ido-vesting": "npx hardhat run --network kai scripts/ido-vesting.js",
     "deploy-erc721-market": "npx hardhat run --network kai scripts/erc721-market.js",
     "deploy-ino": "npx hardhat run --network kai scripts/ino.js",
