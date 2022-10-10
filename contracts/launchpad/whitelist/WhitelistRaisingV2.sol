@@ -214,6 +214,12 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
         return unpayAmount.add(returnFees);
     }
 
+    function getAllocation (address _account) external view returns (uint256) {
+        if (!whitelist[_account]) return 0;
+        return maxAllocation;
+    }
+
+
     function getAddressListLength() external view returns (uint256) {
         return addressList.length;
     }
