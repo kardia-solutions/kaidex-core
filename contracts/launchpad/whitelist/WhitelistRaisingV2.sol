@@ -18,6 +18,13 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
         uint256 amount; // How many tokens the user has provided.
         bool claimed; // default false
     }
+
+    struct TokenInfo {
+        ERC20 token;
+        uint256 decimals;
+        string name;
+        string symbol;
+    }
     // The buy token
     ERC20 public buyToken; // Ex.USDT, DAI ... If buyToken = address(0) => so this is using KAI native
     // The offering token
@@ -77,6 +84,56 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
         raisingAmount = _raisingAmount;
         totalAmount = 0;
         maxAllocation = _maxAllocation;
+    }
+
+    function getInfo()
+        public
+        view
+        returns (
+            TokenInfo memory,
+            TokenInfo memory,
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        TokenInfo memory _buyToken;
+        if (buyToken == ERC20(address(0))) {
+            _buyToken = TokenInfo({
+                token: ERC20(address(0)),
+                decimals: 18,
+                name: 'KardiaChain',
+                symbol: 'KAI'
+            });
+        } else {
+            _buyToken = getERC20Info(buyToken);
+        }
+        TokenInfo memory _offeringToken = getERC20Info(offeringToken);
+        return (
+            _buyToken,
+            _offeringToken,
+            startTime,
+            endTime,
+            harvestTime,
+            offeringAmount,
+            raisingAmount
+        );
+    }
+
+    function getERC20Info(ERC20 _token)
+        private
+        view
+        returns (TokenInfo memory)
+    {
+        return
+            TokenInfo({
+                token: _token,
+                decimals: _token.decimals(),
+                name: _token.name(),
+                symbol: _token.symbol()
+            });
     }
 
     modifier depositAllowed(uint256 _amount) {
