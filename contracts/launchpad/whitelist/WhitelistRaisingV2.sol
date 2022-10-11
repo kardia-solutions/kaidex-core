@@ -51,6 +51,7 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
 
     // IDO Fees: 10000 ~ 1, 1000 ~ 0.1 (10%), 100 ~ 0.01 (1%)
     uint256 public IDO_FEE = 200; // ~ 2%
+    uint256 public totalFees;
 
     // Event
     event Deposit(address indexed user, uint256 amount);    
@@ -82,7 +83,6 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
         harvestTime = _harvestTime;
         offeringAmount = _offeringAmount;
         raisingAmount = _raisingAmount;
-        totalAmount = 0;
         maxAllocation = _maxAllocation;
     }
 
@@ -200,26 +200,32 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
         if (eligibleAmount < _amount) {
             amount = eligibleAmount;
         }
-        // adding submit fees
-        amount += amount.mul(IDO_FEE).div(10000);
+        // submit fees
+        uint256 fees = _feeCompute(amount);
+        uint256 amountInclucedFee = amount + fees;
         if (buyToken == IERC20(address(0))) {
-            require(msg.value >= amount, "amount not enough");
-            if (msg.value > amount) {
-                TransferHelper.safeTransferKAI(msg.sender, msg.value - amount);
+            require(msg.value >= amountInclucedFee, "amount not enough");
+            if (msg.value > amountInclucedFee) {
+                TransferHelper.safeTransferKAI(msg.sender, msg.value - amountInclucedFee);
             }
         } else {
             buyToken.safeTransferFrom(
                 address(msg.sender),
                 address(this),
-                amount
+                amountInclucedFee
             );
-        }      
+        }
         if (userInfo[msg.sender].amount == 0) {
             addressList.push(address(msg.sender));
         }
         userInfo[msg.sender].amount = userInfo[msg.sender].amount.add(amount);
         totalAmount = totalAmount.add(amount);
+        totalFees = totalFees.add(fees);
         emit Deposit(msg.sender, amount);
+    }
+
+    function _feeCompute(uint256 amount) private view returns(uint256) {
+        return amount.mul(IDO_FEE).div(10000);
     }
 
     function harvest() public nonReentrant harvestAllowed whenNotPaused {
@@ -267,7 +273,7 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
         uint256 allocation = getUserAllocation(_user);
         uint256 payAmount = raisingAmount.mul(allocation).div(1e18);
         uint256 unpayAmount = userInfo[_user].amount.sub(payAmount).sub(10000);
-        uint256 returnFees = unpayAmount.mul(IDO_FEE).div(10000);
+        uint256 returnFees =  _feeCompute(unpayAmount);
         return unpayAmount.add(returnFees);
     }
 
@@ -281,18 +287,57 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
         return addressList.length;
     }
 
-    function finalWithdraw(address _destination) public onlyOwner {
+    function finalWithdrawRaised(address _destination) public onlyOwner {
         require(endTime < block.timestamp, "time has not ended");
+        uint256 _withdraw = totalAmount < raisingAmount ? totalAmount : raisingAmount;
         if (buyToken == IERC20(address(0))) {
-            uint256 _withdraw = address(this).balance < raisingAmount ? address(this).balance : raisingAmount;
-            TransferHelper.safeTransferKAI(_destination, _withdraw.mul(IDO_FEE).div(10000));
+            TransferHelper.safeTransferKAI(_destination, _withdraw);
         } else {
-            uint256 _withdraw = buyToken.balanceOf(address(this)) < raisingAmount ? buyToken.balanceOf(address(this)) : raisingAmount;
             buyToken.safeTransfer(
                 address(_destination),
-                _withdraw.mul(IDO_FEE).div(10000)
+                _withdraw
             );
         }
+    }
+
+    function finalWithdrawFees(address _destination) public onlyOwner {
+        require(endTime < block.timestamp, "time has not ended");
+        uint256 _raised = totalAmount < raisingAmount ? totalAmount : raisingAmount;
+        uint256 _withdrawFees = _feeCompute(_raised);
+        if (buyToken == IERC20(address(0))) {
+            TransferHelper.safeTransferKAI(_destination, _withdrawFees);
+        } else {
+            buyToken.safeTransfer(
+                address(_destination),
+                _withdrawFees
+            );
+        }
+    }
+
+    // Return offering amount hasn't sold
+    function remainingToken () public view returns(uint256) {
+        uint256 sold = soldTokenAmount();
+        return offeringAmount.sub(sold);
+    }
+
+    // Return offering amount has sold already
+    function soldTokenAmount() public view returns(uint256) {
+        if (totalAmount == 0) {
+            return 0;
+        }
+        if (totalAmount >= raisingAmount) {
+            return offeringAmount;
+        }
+        return offeringAmount.mul(totalAmount).div(raisingAmount);
+    }
+
+    function withdrawRemainingOfferingToken (address _destination) public onlyOwner {
+        require(endTime < block.timestamp, "time has not ended");
+        uint256 _withdraw = remainingToken();
+        offeringToken.safeTransfer(
+            address(_destination),
+            _withdraw
+        );
     }
 
     function emergencyWithdraw(address token, address payable to)

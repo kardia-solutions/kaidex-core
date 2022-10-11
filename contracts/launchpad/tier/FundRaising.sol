@@ -337,16 +337,41 @@ contract FundRaising is ReentrancyGuard, Ownable, Pausable {
 
     function finalWithdraw(address _destination) public onlyOwner {
         require(endTime < block.timestamp, "time has not ended");
+        uint256 _withdraw = totalAmount < raisingAmount ? totalAmount : raisingAmount;
         if (buyToken == IERC20(address(0))) {
-            uint256 _withdraw = address(this).balance < raisingAmount ? address(this).balance : raisingAmount;
             TransferHelper.safeTransferKAI(_destination, _withdraw);
         } else {
-            uint256 _withdraw = buyToken.balanceOf(address(this)) < raisingAmount ? buyToken.balanceOf(address(this)) : raisingAmount;
             buyToken.safeTransfer(
                 address(_destination),
                 _withdraw
             );
         }
+    }
+
+    // Return offering amount hasn't sold
+    function remainingToken () public view returns(uint256) {
+        uint256 sold = soldTokenAmount();
+        return offeringAmount.sub(sold);
+    }
+
+    // Return offering amount has sold already
+    function soldTokenAmount() public view returns(uint256) {
+        if (totalAmount == 0) {
+            return 0;
+        }
+        if (totalAmount >= raisingAmount) {
+            return offeringAmount;
+        }
+        return offeringAmount.mul(totalAmount).div(raisingAmount);
+    }
+
+    function withdrawRemainingOfferingToken (address _destination) public onlyOwner {
+        require(endTime < block.timestamp, "time has not ended");
+        uint256 _withdraw = remainingToken();
+        offeringToken.safeTransfer(
+            address(_destination),
+            _withdraw
+        );
     }
 
     function emergencyWithdraw(address token, address payable to)

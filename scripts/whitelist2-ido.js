@@ -7,13 +7,17 @@ const hre = require("hardhat");
 
 const _buyToken = "0x0000000000000000000000000000000000000000" // KAI
 const _offeringToken = "0x1110A87c7664e819fca35B9B0f6d31f64aC78963";  // WKAI
-const _startTime = "1665395700";
-const _endTime = "1665399300";
-const _harvestTime = "1665399300"
+const _startTime = "1665477540";
+const _endTime = "1665477720";
+const _harvestTime = "1665477720"
 const _offeringAmount = "400000000000000000000";
-const _raisingAmount = "1000000000000000000000";
+const _raisingAmount = "10000000000000000000000";
 const _maxAllocation = "200000000000000000000";
-const addresses = ["0x01B3232Bc2AdfBa8c39Ba4A4002924d62e39aE5d", "0x9d8FC3f09059f1cF04c67bC6bE4aeF68e8F20B0F", "0xF931315EEa67916f98A8aB80Fe347a94AFdD69f4"]
+const addresses = [
+    "0x01B3232Bc2AdfBa8c39Ba4A4002924d62e39aE5d",
+    "0x9d8FC3f09059f1cF04c67bC6bE4aeF68e8F20B0F",
+    "0xF931315EEa67916f98A8aB80Fe347a94AFdD69f4",
+    "0x5D94B6dA25A95067e0647bc8F6597823ea09162e"]
 async function main() {
     // Hardhat always runs the compile task when running scripts with its command
     // line interface.
@@ -36,7 +40,7 @@ async function main() {
     await whitelistRaising.deployed();
     console.log("FundRaising deployed to:", whitelistRaising.address);
     // Whitelist 
-    const {hash} = await whitelistRaising.addAddressesToWhitelist(addresses)
+    const { hash } = await whitelistRaising.addAddressesToWhitelist(addresses)
     console.log("Transfer_x", hash)
 
 }
