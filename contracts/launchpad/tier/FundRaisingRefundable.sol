@@ -18,6 +18,7 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
     struct UserInfo {
         uint256 amount; // How many tokens the user has provided.
         bool claimed; // default false
+        bool refunded; // default false
     }
     // The buy token
     ERC20 public buyToken; // Ex.USDT, DAI ... If buyToken = address(0) => so this is using KAI native
@@ -29,6 +30,10 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
     uint256 public endTime;
     // The timestamp user staring harvest
     uint256 public harvestTime;
+    // The timestamp allow user refund
+    uint256 public refundStartTime;
+    // The timestamp end refund
+    uint256 public refundEndTime;
     // total amount of raising tokens need to be raised
     uint256 public raisingAmount;
     // total amount of offeringToken that will offer
@@ -50,11 +55,21 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
     // Project multiplier: 10000 ~ 1, 1000 ~ 0.1
     uint256 public multiplier;
 
+    // Refund Fees: 10000 ~ 1, 1000 ~ 0.1 (10%), 100 ~ 0.01 (1%)
+    uint256 public REFUND_FEE = 500; // ~ 5%
+    uint256 public refundFees;
+    uint256 public totalRefund; // incluced fees
+
     event Deposit(address indexed user, uint256 amount);
     event Harvest(
         address indexed user,
         uint256 offeringAmount,
         uint256 excessAmount
+    );
+    event Refund(
+        address indexed user,
+        uint256 amount,
+        uint256 fees
     );
 
     struct TokenInfo {
@@ -70,6 +85,8 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
         uint256 _startTime,
         uint256 _endTime,
         uint256 _harvestTime,
+        uint256 _refundStartTime,
+        uint256 _refundEndTime,
         uint256 _offeringAmount,
         uint256 _raisingAmount,
         ITierSystem _tierSystem,
@@ -79,17 +96,18 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
     ) public {
         require(
             _harvestTime >= _endTime &&
-            _endTime > _startTime &&
-            _startTime > block.timestamp
+                _endTime > _startTime &&
+                _startTime > block.timestamp
         );
         buyToken = _buyToken;
         offeringToken = _offeringToken;
         startTime = _startTime;
         endTime = _endTime;
         harvestTime = _harvestTime;
+        refundStartTime = _refundStartTime;
+        refundEndTime = _refundEndTime;
         offeringAmount = _offeringAmount;
         raisingAmount = _raisingAmount;
-        totalAmount = 0;
         tierSystem = _tierSystem;
         snapshotFrom = _snapshotFrom;
         snapshotTo = _snapshotTo;
@@ -109,20 +127,33 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
         require(block.timestamp > harvestTime, "not harvest time");
         require(userInfo[msg.sender].amount > 0, "have you participated?");
         require(!userInfo[msg.sender].claimed, "nothing to harvest");
+        require(!userInfo[msg.sender].refunded, "not refuned yet");
         _;
     }
 
-    function setSnapshotFrom (uint256 id) public onlyOwner {
-        require(id > 0, 'Id invalid');
+    modifier refundAllowed() {
+        require(
+            block.timestamp > refundStartTime &&
+                block.timestamp <= refundEndTime,
+            "not refund time"
+        );
+        require(userInfo[msg.sender].amount > 0, "have you participated?");
+        require(!userInfo[msg.sender].claimed, "not harvested yet");
+        require(!userInfo[msg.sender].refunded, "not refuned yet");
+        _;
+    }
+
+    function setSnapshotFrom(uint256 id) public onlyOwner {
+        require(id > 0, "Id invalid");
         snapshotFrom = id;
     }
 
-    function setSnapshotTo (uint256 id) public onlyOwner {
-        require(id > 0, 'Id invalid');
+    function setSnapshotTo(uint256 id) public onlyOwner {
+        require(id > 0, "Id invalid");
         snapshotTo = id;
     }
 
-    function setMultiplier (uint256 mul) public onlyOwner {
+    function setMultiplier(uint256 mul) public onlyOwner {
         multiplier = mul;
     }
 
@@ -160,8 +191,8 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
             _buyToken = TokenInfo({
                 token: ERC20(address(0)),
                 decimals: 18,
-                name: 'KardiaChain',
-                symbol: 'KAI'
+                name: "KardiaChain",
+                symbol: "KAI"
             });
         } else {
             _buyToken = getERC20Info(buyToken);
@@ -202,11 +233,10 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
         raisingAmount = _raisingAmount;
     }
 
-    function updateOfferingToken (address _newToken) public onlyOwner {
+    function updateOfferingToken(address _newToken) public onlyOwner {
         require(_newToken != address(0), "no");
         offeringToken = ERC20(_newToken);
-    } 
-
+    }
 
     function deposit(uint256 _amount)
         public
@@ -250,34 +280,54 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
         view
         returns (uint256)
     {
-        require(snapshotFrom > 0 && snapshotTo > snapshotFrom, "Snapshot id not set");
-        uint256 tier = tierSystem.getTierFromTo(_account, snapshotFrom, snapshotTo);
+        require(
+            snapshotFrom > 0 && snapshotTo > snapshotFrom,
+            "Snapshot id not set"
+        );
+        uint256 tier = tierSystem.getTierFromTo(
+            _account,
+            snapshotFrom,
+            snapshotTo
+        );
         if (tier == 0) return 0;
         return allocations(tier);
     }
 
-    function getTier (address _account) external view returns (uint256) {
+    function getTier(address _account) external view returns (uint256) {
         return tierSystem.getTierFromTo(_account, snapshotFrom, snapshotTo);
     }
 
-    function getAllocation (address _account) external view returns (uint256) {
-        uint256 tier = tierSystem.getTierFromTo(_account, snapshotFrom, snapshotTo);
+    function getAllocation(address _account) external view returns (uint256) {
+        uint256 tier = tierSystem.getTierFromTo(
+            _account,
+            snapshotFrom,
+            snapshotTo
+        );
         if (tier == 0) return 0;
         return allocations(tier);
     }
 
-    function getAllocationPoint (address _account) external view returns (uint256) {
-        uint256 tier = tierSystem.getTierFromTo(_account, snapshotFrom, snapshotTo);
+    function getAllocationPoint(address _account)
+        external
+        view
+        returns (uint256)
+    {
+        uint256 tier = tierSystem.getTierFromTo(
+            _account,
+            snapshotFrom,
+            snapshotTo
+        );
         if (tier == 0) return 0;
         return tierSystem.getAllocationPoint(tier);
     }
 
-    function allocations(uint256 _tier) view public returns (uint256) {
+    function allocations(uint256 _tier) public view returns (uint256) {
         uint256 _alloPoint = tierSystem.getAllocationPoint(_tier);
-        if (buyToken == IERC20(address(0)) ) {
+        if (buyToken == IERC20(address(0))) {
             return _alloPoint.mul(multiplier).mul(1e18).div(10000);
         }
-        return _alloPoint.mul(multiplier).mul(10 ** buyToken.decimals()).div(10000);
+        return
+            _alloPoint.mul(multiplier).mul(10**buyToken.decimals()).div(10000);
     }
 
     function harvest() public nonReentrant harvestAllowed whenNotPaused {
@@ -299,6 +349,21 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
         }
         userInfo[msg.sender].claimed = true;
         emit Harvest(msg.sender, offeringTokenAmount, refundingTokenAmount);
+    }
+
+    function refund() public nonReentrant whenNotPaused refundAllowed {
+        uint256 amountDep = userInfo[msg.sender].amount;
+        uint256 fees = amountDep.mul(REFUND_FEE).div(10000);
+        uint256 refundable = amountDep - fees;
+        if (buyToken == IERC20(address(0))) {
+            TransferHelper.safeTransferKAI(msg.sender, refundable);
+        } else {
+            buyToken.safeTransfer(address(msg.sender), refundable);
+        }
+        userInfo[msg.sender].refunded = true;
+        refundFees = refundFees.add(fees);
+        totalRefund = totalRefund.add(refundable);
+        emit Refund(msg.sender, refundable, fees);
     }
 
     function hasHarvest(address _user) external view returns (bool) {
@@ -336,17 +401,43 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
     }
 
     function finalWithdraw(address _destination) public onlyOwner {
-        require(endTime < block.timestamp, "time has not ended");
+        require(endTime < block.timestamp && refundEndTime < block.timestamp, "time has not ended");
+        uint256 _withdraw = totalAmount < raisingAmount ? totalAmount : raisingAmount;
+        _withdraw = _withdraw - totalRefund;
         if (buyToken == IERC20(address(0))) {
-            uint256 _withdraw = address(this).balance < raisingAmount ? address(this).balance : raisingAmount;
             TransferHelper.safeTransferKAI(_destination, _withdraw);
         } else {
-            uint256 _withdraw = buyToken.balanceOf(address(this)) < raisingAmount ? buyToken.balanceOf(address(this)) : raisingAmount;
             buyToken.safeTransfer(
                 address(_destination),
                 _withdraw
             );
         }
+    }
+
+    // Return offering amount hasn't sold
+    function remainingToken () public view returns(uint256) {
+        uint256 sold = soldTokenAmount();
+        return offeringAmount.sub(sold);
+    }
+
+    // Return offering amount has sold already
+    function soldTokenAmount() public view returns(uint256) {
+        if (totalAmount == 0) {
+            return 0;
+        }
+        if (totalAmount >= raisingAmount) {
+            return offeringAmount;
+        }
+        return offeringAmount.mul(totalAmount).div(raisingAmount);
+    }
+
+    function withdrawRemainingOfferingToken (address _destination) public onlyOwner {
+        require(endTime < block.timestamp, "time has not ended");
+        uint256 _withdraw = remainingToken();
+        offeringToken.safeTransfer(
+            address(_destination),
+            _withdraw
+        );
     }
 
     function emergencyWithdraw(address token, address payable to)
@@ -371,5 +462,5 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
         _unpause();
     }
 
-    fallback () external payable{}
+    fallback() external payable {}
 }
