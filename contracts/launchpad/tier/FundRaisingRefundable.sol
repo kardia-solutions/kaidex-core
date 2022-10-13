@@ -1,5 +1,6 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -59,6 +60,7 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
     uint256 public REFUND_FEE = 500; // ~ 5%
     uint256 public refundFees;
     uint256 public totalRefund; // incluced fees
+    bool initialized;
 
     event Deposit(address indexed user, uint256 amount);
     event Harvest(
@@ -66,11 +68,7 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
         uint256 offeringAmount,
         uint256 excessAmount
     );
-    event Refund(
-        address indexed user,
-        uint256 amount,
-        uint256 fees
-    );
+    event Refund(address indexed user, uint256 amount, uint256 fees);
 
     struct TokenInfo {
         ERC20 token;
@@ -82,11 +80,6 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
     constructor(
         ERC20 _buyToken,
         ERC20 _offeringToken,
-        uint256 _startTime,
-        uint256 _endTime,
-        uint256 _harvestTime,
-        uint256 _refundStartTime,
-        uint256 _refundEndTime,
         uint256 _offeringAmount,
         uint256 _raisingAmount,
         ITierSystem _tierSystem,
@@ -94,18 +87,8 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
         uint256 _snapshotTo,
         uint256 _multiplier
     ) public {
-        require(
-            _harvestTime >= _endTime &&
-                _endTime > _startTime &&
-                _startTime > block.timestamp
-        );
         buyToken = _buyToken;
         offeringToken = _offeringToken;
-        startTime = _startTime;
-        endTime = _endTime;
-        harvestTime = _harvestTime;
-        refundStartTime = _refundStartTime;
-        refundEndTime = _refundEndTime;
         offeringAmount = _offeringAmount;
         raisingAmount = _raisingAmount;
         tierSystem = _tierSystem;
@@ -114,7 +97,31 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
         multiplier = _multiplier;
     }
 
+    function initTime(
+        uint256 _startTime,
+        uint256 _endTime,
+        uint256 _harvestTime,
+        uint256 _refundStartTime,
+        uint256 _refundEndTime
+    ) public onlyOwner {
+        require(!initialized, "has initialized");
+        require(
+            _harvestTime >= _endTime &&
+                _endTime > _startTime &&
+                _startTime > block.timestamp &&
+                _refundStartTime >= _endTime &&
+                _refundStartTime < _refundEndTime
+        );
+        startTime = _startTime;
+        endTime = _endTime;
+        harvestTime = _harvestTime;
+        refundStartTime = _refundStartTime;
+        refundEndTime = _refundEndTime;
+        initialized = true;
+    }
+
     modifier depositAllowed(uint256 _amount) {
+        require(initialized, "hasn't already");
         require(
             block.timestamp > startTime && block.timestamp < endTime,
             "not raising time"
@@ -124,22 +131,24 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
     }
 
     modifier harvestAllowed() {
+        require(initialized, "hasn't already");
         require(block.timestamp > harvestTime, "not harvest time");
         require(userInfo[msg.sender].amount > 0, "have you participated?");
         require(!userInfo[msg.sender].claimed, "nothing to harvest");
-        require(!userInfo[msg.sender].refunded, "not refuned yet");
+        require(!userInfo[msg.sender].refunded, "has refuned");
         _;
     }
 
     modifier refundAllowed() {
+        require(initialized, "hasn't already");
         require(
             block.timestamp > refundStartTime &&
                 block.timestamp <= refundEndTime,
             "not refund time"
         );
         require(userInfo[msg.sender].amount > 0, "have you participated?");
-        require(!userInfo[msg.sender].claimed, "not harvested yet");
-        require(!userInfo[msg.sender].refunded, "not refuned yet");
+        require(!userInfo[msg.sender].claimed, "has harvested");
+        require(!userInfo[msg.sender].refunded, "has refuned");
         _;
     }
 
@@ -163,6 +172,23 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
             "time invalid!!"
         );
         harvestTime = _newTime;
+    }
+
+    function updateRefundStartTime(uint256 _refundStartTime) public onlyOwner {
+        require(
+            _refundStartTime > block.timestamp && _refundStartTime > endTime,
+            "time invalid!!"
+        );
+        refundStartTime = _refundStartTime;
+    }
+
+    function updateRefundEndTime(uint256 _refundEndTime) public onlyOwner {
+        require(
+            _refundEndTime > block.timestamp &&
+                _refundEndTime > refundStartTime,
+            "time invalid!!"
+        );
+        refundEndTime = _refundEndTime;
     }
 
     function updateEndTime(uint256 _newTime) public onlyOwner {
@@ -401,27 +427,29 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
     }
 
     function finalWithdraw(address _destination) public onlyOwner {
-        require(endTime < block.timestamp && refundEndTime < block.timestamp, "time has not ended");
-        uint256 _withdraw = totalAmount < raisingAmount ? totalAmount : raisingAmount;
+        require(
+            endTime < block.timestamp && refundEndTime < block.timestamp,
+            "time has not ended"
+        );
+        uint256 _withdraw = totalAmount < raisingAmount
+            ? totalAmount
+            : raisingAmount;
         _withdraw = _withdraw - totalRefund;
         if (buyToken == IERC20(address(0))) {
             TransferHelper.safeTransferKAI(_destination, _withdraw);
         } else {
-            buyToken.safeTransfer(
-                address(_destination),
-                _withdraw
-            );
+            buyToken.safeTransfer(address(_destination), _withdraw);
         }
     }
 
     // Return offering amount hasn't sold
-    function remainingToken () public view returns(uint256) {
+    function remainingToken() public view returns (uint256) {
         uint256 sold = soldTokenAmount();
         return offeringAmount.sub(sold);
     }
 
     // Return offering amount has sold already
-    function soldTokenAmount() public view returns(uint256) {
+    function soldTokenAmount() public view returns (uint256) {
         if (totalAmount == 0) {
             return 0;
         }
@@ -431,26 +459,24 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
         return offeringAmount.mul(totalAmount).div(raisingAmount);
     }
 
-    function withdrawRemainingOfferingToken (address _destination) public onlyOwner {
-        require(endTime < block.timestamp, "time has not ended");
-        uint256 _withdraw = remainingToken();
-        offeringToken.safeTransfer(
-            address(_destination),
-            _withdraw
-        );
-    }
-
-    function emergencyWithdraw(address token, address payable to)
+    function withdrawRemainingOfferingToken(address _destination)
         public
         onlyOwner
     {
+        require(endTime < block.timestamp, "time has not ended");
+        uint256 _withdraw = remainingToken();
+        offeringToken.safeTransfer(address(_destination), _withdraw);
+    }
+
+    function emergencyWithdraw(
+        address token,
+        address payable to,
+        uint256 amount
+    ) public onlyOwner {
         if (token == address(0)) {
-            to.transfer(address(this).balance);
+            to.transfer(amount);
         } else {
-            ERC20(token).safeTransfer(
-                to,
-                ERC20(token).balanceOf(address(this))
-            );
+            ERC20(token).safeTransfer(to, amount);
         }
     }
 
