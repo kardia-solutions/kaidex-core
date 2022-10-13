@@ -54,7 +54,7 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
     uint256 public totalFees;
 
     // Event
-    event Deposit(address indexed user, uint256 amount);    
+    event Deposit(address indexed user, uint256 amount);
     event Harvest(
         address indexed user,
         uint256 offeringAmount,
@@ -73,8 +73,8 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
     ) public {
         require(
             _harvestTime >= _endTime &&
-            _endTime > _startTime &&
-            _startTime > block.timestamp
+                _endTime > _startTime &&
+                _startTime > block.timestamp
         );
         buyToken = _buyToken;
         offeringToken = _offeringToken;
@@ -104,8 +104,8 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
             _buyToken = TokenInfo({
                 token: ERC20(address(0)),
                 decimals: 18,
-                name: 'KardiaChain',
-                symbol: 'KAI'
+                name: "KardiaChain",
+                symbol: "KAI"
             });
         } else {
             _buyToken = getERC20Info(buyToken);
@@ -153,7 +153,10 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
     }
 
     function updateStartTime(uint256 _newTime) public onlyOwner {
-        require(_newTime > block.timestamp && _newTime < endTime, "time invalid!!");
+        require(
+            _newTime > block.timestamp && _newTime < endTime,
+            "time invalid!!"
+        );
         startTime = _newTime;
     }
 
@@ -173,14 +176,12 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
         endTime = _newTime;
     }
 
-    function setOfferingAmount(uint256 _offerAmount) public onlyOwner {
-        require(block.timestamp < startTime, "no");
-        offeringAmount = _offerAmount;
-    }
-
-    function setRaisingAmount(uint256 _raisingAmount) public onlyOwner {
-        require(block.timestamp < startTime, "no");
+    function setRaisingAndOfferingAmount(
+        uint256 _offerAmount,
+        uint256 _raisingAmount
+    ) public onlyOwner {
         raisingAmount = _raisingAmount;
+        offeringAmount = _offerAmount;
     }
 
     function deposit(uint256 _amount)
@@ -206,7 +207,10 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
         if (buyToken == IERC20(address(0))) {
             require(msg.value >= amountInclucedFee, "amount not enough");
             if (msg.value > amountInclucedFee) {
-                TransferHelper.safeTransferKAI(msg.sender, msg.value - amountInclucedFee);
+                TransferHelper.safeTransferKAI(
+                    msg.sender,
+                    msg.value - amountInclucedFee
+                );
             }
         } else {
             buyToken.safeTransferFrom(
@@ -224,7 +228,7 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
         emit Deposit(msg.sender, amount);
     }
 
-    function _feeCompute(uint256 amount) private view returns(uint256) {
+    function _feeCompute(uint256 amount) private view returns (uint256) {
         return amount.mul(IDO_FEE).div(10000);
     }
 
@@ -232,7 +236,7 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
         uint256 offeringTokenAmount = getOfferingAmount(msg.sender);
         uint256 refundingTokenAmount = getRefundingAmount(msg.sender);
         offeringToken.safeTransfer(address(msg.sender), offeringTokenAmount);
-         if (refundingTokenAmount > 0) {
+        if (refundingTokenAmount > 0) {
             if (buyToken == IERC20(address(0))) {
                 TransferHelper.safeTransferKAI(
                     msg.sender,
@@ -265,7 +269,7 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
         }
     }
 
-        // get the amount of lp token you will be refunded
+    // get the amount of lp token you will be refunded
     function getRefundingAmount(address _user) public view returns (uint256) {
         if (totalAmount <= raisingAmount) {
             return 0;
@@ -273,15 +277,14 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
         uint256 allocation = getUserAllocation(_user);
         uint256 payAmount = raisingAmount.mul(allocation).div(1e18);
         uint256 unpayAmount = userInfo[_user].amount.sub(payAmount).sub(10000);
-        uint256 returnFees =  _feeCompute(unpayAmount);
+        uint256 returnFees = _feeCompute(unpayAmount);
         return unpayAmount.add(returnFees);
     }
 
-    function getAllocation (address _account) external view returns (uint256) {
+    function getAllocation(address _account) external view returns (uint256) {
         if (!whitelist[_account]) return 0;
         return maxAllocation;
     }
-
 
     function getAddressListLength() external view returns (uint256) {
         return addressList.length;
@@ -289,39 +292,37 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
 
     function finalWithdrawRaised(address _destination) public onlyOwner {
         require(endTime < block.timestamp, "time has not ended");
-        uint256 _withdraw = totalAmount < raisingAmount ? totalAmount : raisingAmount;
+        uint256 _withdraw = totalAmount < raisingAmount
+            ? totalAmount
+            : raisingAmount;
         if (buyToken == IERC20(address(0))) {
             TransferHelper.safeTransferKAI(_destination, _withdraw);
         } else {
-            buyToken.safeTransfer(
-                address(_destination),
-                _withdraw
-            );
+            buyToken.safeTransfer(address(_destination), _withdraw);
         }
     }
 
     function finalWithdrawFees(address _destination) public onlyOwner {
         require(endTime < block.timestamp, "time has not ended");
-        uint256 _raised = totalAmount < raisingAmount ? totalAmount : raisingAmount;
+        uint256 _raised = totalAmount < raisingAmount
+            ? totalAmount
+            : raisingAmount;
         uint256 _withdrawFees = _feeCompute(_raised);
         if (buyToken == IERC20(address(0))) {
             TransferHelper.safeTransferKAI(_destination, _withdrawFees);
         } else {
-            buyToken.safeTransfer(
-                address(_destination),
-                _withdrawFees
-            );
+            buyToken.safeTransfer(address(_destination), _withdrawFees);
         }
     }
 
     // Return offering amount hasn't sold
-    function remainingToken () public view returns(uint256) {
+    function remainingToken() public view returns (uint256) {
         uint256 sold = soldTokenAmount();
         return offeringAmount.sub(sold);
     }
 
     // Return offering amount has sold already
-    function soldTokenAmount() public view returns(uint256) {
+    function soldTokenAmount() public view returns (uint256) {
         if (totalAmount == 0) {
             return 0;
         }
@@ -331,13 +332,13 @@ contract WhitelistRaisingV2 is ReentrancyGuard, Ownable, Pausable, Whitelist {
         return offeringAmount.mul(totalAmount).div(raisingAmount);
     }
 
-    function withdrawRemainingOfferingToken (address _destination) public onlyOwner {
+    function withdrawRemainingOfferingToken(address _destination)
+        public
+        onlyOwner
+    {
         require(endTime < block.timestamp, "time has not ended");
         uint256 _withdraw = remainingToken();
-        offeringToken.safeTransfer(
-            address(_destination),
-            _withdraw
-        );
+        offeringToken.safeTransfer(address(_destination), _withdraw);
     }
 
     function emergencyWithdraw(address token, address payable to)
