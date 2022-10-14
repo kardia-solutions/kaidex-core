@@ -60,6 +60,7 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
     uint256 public REFUND_FEE = 500; // ~ 5%
     uint256 public refundFees;
     uint256 public totalRefund; // incluced fees
+    uint256 public offeringTokenRefund;
     bool initialized;
 
     event Deposit(address indexed user, uint256 amount);
@@ -379,7 +380,10 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
 
     function refund() public nonReentrant whenNotPaused refundAllowed {
         uint256 amountDep = userInfo[msg.sender].amount;
-        uint256 fees = amountDep.mul(REFUND_FEE).div(10000);
+        uint256 refundingTokenAmount = getRefundingAmount(msg.sender);
+        uint256 offeringTokenAmount = getOfferingAmount(msg.sender);
+        uint256 boughtAmount = amountDep.sub(refundingTokenAmount);
+        uint256 fees = boughtAmount.mul(REFUND_FEE).div(10000);
         uint256 refundable = amountDep - fees;
         if (buyToken == IERC20(address(0))) {
             TransferHelper.safeTransferKAI(msg.sender, refundable);
@@ -389,6 +393,7 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
         userInfo[msg.sender].refunded = true;
         refundFees = refundFees.add(fees);
         totalRefund = totalRefund.add(refundable);
+        offeringTokenRefund = offeringTokenRefund.add(offeringTokenAmount);
         emit Refund(msg.sender, refundable, fees);
     }
 
@@ -431,15 +436,38 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
             endTime < block.timestamp && refundEndTime < block.timestamp,
             "time has not ended"
         );
-        uint256 _withdraw = totalAmount < raisingAmount
-            ? totalAmount
-            : raisingAmount;
-        _withdraw = _withdraw - totalRefund;
+        uint256 _withdraw = finalWithdrawAmount();
         if (buyToken == IERC20(address(0))) {
             TransferHelper.safeTransferKAI(_destination, _withdraw);
         } else {
             buyToken.safeTransfer(address(_destination), _withdraw);
         }
+    }
+
+    function finalWithdrawAmount() public view returns(uint256) {
+        if (totalAmount > raisingAmount) {
+            uint256 soldAmountAfterRefund = soldTokenAmountAferRefund();
+            return soldAmountAfterRefund.mul(raisingAmount).div(offeringAmount) + refundFees;
+        } else {
+           return totalAmount - totalRefund;
+        }
+    }
+
+    // Return offering amount hasn't sold after refund
+    function remainingTokenAfterRefund() public view returns (uint256) {
+        uint256 sold = soldTokenAmountAferRefund();
+        return offeringAmount.sub(sold);
+    }
+
+    // Return offering amount has sold already after refund
+    function soldTokenAmountAferRefund() public view returns (uint256) {
+        if (totalAmount == 0) {
+            return 0;
+        }
+        if (totalAmount >= raisingAmount) {
+            return offeringAmount - offeringTokenRefund;
+        }
+        return offeringAmount.mul(totalAmount).div(raisingAmount) - offeringTokenRefund;
     }
 
     // Return offering amount hasn't sold
@@ -457,15 +485,6 @@ contract FundRaisingRefundable is ReentrancyGuard, Ownable, Pausable {
             return offeringAmount;
         }
         return offeringAmount.mul(totalAmount).div(raisingAmount);
-    }
-
-    function withdrawRemainingOfferingToken(address _destination)
-        public
-        onlyOwner
-    {
-        require(endTime < block.timestamp, "time has not ended");
-        uint256 _withdraw = remainingToken();
-        offeringToken.safeTransfer(address(_destination), _withdraw);
     }
 
     function emergencyWithdraw(
