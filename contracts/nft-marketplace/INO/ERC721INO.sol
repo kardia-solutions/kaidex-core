@@ -54,7 +54,7 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
             "Buy time is invalid"
         );
 
-        require(IMinterAdapter(minterAdapter).isValidTierTime(_msgSender()), "Tim has not come");
+        require(IMinterAdapter(minterAdapter).isValidTierTime(_msgSender()), "Time has not come");
         require(
             users[_msgSender()].ticket + _ticket <= getMaximumTicketByUser(_msgSender()) &&
                 totalTicket + _ticket <= getMaximumTicketSales(),
