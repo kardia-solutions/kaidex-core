@@ -8,4 +8,6 @@ interface IMinterAdapter {
     function getSnapshotFrom() external view returns(uint256);
     function getSnapshotTo() external view returns(uint256);
     function getAllocationByTier(uint256 _tier) external view returns(uint256);
+    function isValidTierTime (address _user) external view returns (bool);
+    function getBuySchedulesBuyTier(uint256 _tier) external view returns(uint256);
 }

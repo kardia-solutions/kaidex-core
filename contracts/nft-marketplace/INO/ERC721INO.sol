@@ -53,6 +53,8 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
             block.timestamp >= startTime && block.timestamp <= endTime,
             "Buy time is invalid"
         );
+
+        require(IMinterAdapter(minterAdapter).isValidTierTime(_msgSender()), "Tim has not come");
         require(
             users[_msgSender()].ticket + _ticket <= getMaximumTicketByUser(_msgSender()) &&
                 totalTicket + _ticket <= getMaximumTicketSales(),
@@ -164,6 +166,10 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
 
     function getAllocationByTier (uint256 _tier) public view returns (uint256) {
         return IMinterAdapter(minterAdapter).getAllocationByTier(_tier);
+    }
+
+    function getBuySchedulesBuyTier (uint256 _tier) public view returns (uint256) {
+        return IMinterAdapter(minterAdapter).getBuySchedulesBuyTier(_tier);
     }
 
     function pause() public onlyOwner {

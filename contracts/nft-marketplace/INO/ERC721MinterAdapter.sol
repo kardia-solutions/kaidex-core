@@ -26,18 +26,32 @@ contract ERC721MinterAdapter is IMinterAdapter, Ownable {
 
     // Tier allocation
     uint256[5] public tierAllocations = [1,2,4,8,15];
+    uint256[5] public tierBuySchedules; // Tier 1,2,3,4,5
 
     constructor(
         address nft,
         ITierSystem _tierSystem,
         uint256 _snapshotFrom,
-        uint256 _snapshotTo
+        uint256 _snapshotTo,
+        uint256[5] memory _tierBuySchedules
     ){
         require(nft != address(0), "address is invalid");
         erc721NFTContract = IMinter(nft);
         snapshotFrom = _snapshotFrom;
         snapshotTo = _snapshotTo;
         tierSystem = _tierSystem;
+        require(_verifySchedules(_tierBuySchedules), "schedules were invalid");
+        tierBuySchedules = _tierBuySchedules;
+    }
+
+    function _verifySchedules (uint256[5] memory _tierBuySchedules) private view returns (bool) {
+        if (_tierBuySchedules.length != 5) return false;
+        for(uint256 index = 0; index < _tierBuySchedules.length; ++index) {
+            if (index == 0 && _tierBuySchedules[index] <= 0) return false;
+            if (index > 0 && _tierBuySchedules[index] > _tierBuySchedules[index - 1]) return false;
+            if (_tierBuySchedules[index] < block.timestamp) return false;
+        }
+        return true;
     }
 
     modifier onlyINO {
@@ -60,8 +74,15 @@ contract ERC721MinterAdapter is IMinterAdapter, Ownable {
         inoContract = _ino;
     }
 
+    function isValidTierTime (address _user) external view override returns (bool) {
+        uint256 tier = tierSystem.getTierFromTo(_user, snapshotFrom, snapshotTo);
+        if (tier == 0) return false;
+        if (tierBuySchedules[tier - 1] < block.timestamp) return true;
+        return false;
+    }
 
-    function isMinter() external pure override returns (bool)  {
+
+    function isMinter() external pure override returns (bool) {
         return true;
     }
 
@@ -96,5 +117,10 @@ contract ERC721MinterAdapter is IMinterAdapter, Ownable {
     function getAllocationByTier(uint256 _tier) external view override returns(uint256) {
         require(_tier > 0 && _tier <= 5, "Tier was invalid");
         return tierAllocations[_tier - 1];
+    }
+
+    function getBuySchedulesBuyTier(uint256 _tier) external view override returns(uint256) {
+        require(_tier > 0 && _tier <= 5, "Tier was invalid");
+        return tierBuySchedules[_tier - 1];
     }
 }
