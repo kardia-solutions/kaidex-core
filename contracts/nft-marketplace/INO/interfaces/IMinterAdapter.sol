@@ -10,4 +10,5 @@ interface IMinterAdapter {
     function getAllocationByTier(uint256 _tier) external view returns(uint256);
     function isValidTierTime (address _user) external view returns (bool);
     function getBuySchedulesBuyTier(uint256 _tier) external view returns(uint256);
+    function getTier (address userAddr) external view returns(uint256);
 }
