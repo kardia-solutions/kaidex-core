@@ -14,6 +14,7 @@ interface IMinterAdapter {
     function getAllocationByTier(uint256 _tier) external view returns(uint256);
     function isValidTierTime (address _user) external view returns (bool);
     function getBuySchedulesBuyTier(uint256 _tier) external view returns(uint256);
+    function getTier (address userAddr) external view returns(uint256);
 }
 
 
@@ -450,5 +451,10 @@ contract ERC721MinterAdapter is IMinterAdapter, Ownable {
     function getBuySchedulesBuyTier(uint256 _tier) external view override returns(uint256) {
         require(_tier > 0 && _tier <= 5, "Tier was invalid");
         return tierBuySchedules[_tier - 1];
+    }
+
+    // get tier system
+    function getTier (address userAddr) external view override returns(uint256) {
+        return tierSystem.getTierFromTo(userAddr, snapshotFrom, snapshotTo);
     }
 }

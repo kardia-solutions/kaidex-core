@@ -28,7 +28,7 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
     uint256 public endTime;
 
     event Buy(address indexed user, uint8 _ticket);
-    event Claim(address indexed user, uint256 tokenId);
+    event Claim(address indexed user, uint256[] tokenId);
 
     constructor(
         address _buyToken,
@@ -101,13 +101,23 @@ contract ERC721INO is Ownable, Pausable, ReentrancyGuard {
         emit Buy(_msgSender(), _ticket);
     }
 
-    function claim() public whenNotPaused nonReentrant satisfyClaimCondition {
+    function claims(uint256 _ticket) public whenNotPaused nonReentrant satisfyClaimCondition {
+        uint256 availableTicket = users[_msgSender()].ticket - users[_msgSender()].usedTicket;
+        if (_ticket > availableTicket) {
+            _ticket = availableTicket;
+        }
+        uint256[] memory tokenIds = new uint256[](_ticket);
         // mint nft
-        uint256 tokenId = IMinterAdapter(minterAdapter).mint(_msgSender());
-        require(tokenId > 0, "mint falied");
-        users[_msgSender()].usedTicket++;
-        totalUsedTicket++;
-        emit Claim(_msgSender(), tokenId);
+        if (_ticket > 0) {
+            for(uint256 index = 0; index < _ticket; ++index) {
+                uint256 tokenId_ = IMinterAdapter(minterAdapter).mint(_msgSender());
+                require(tokenId_ > 0, "mint falied");
+                users[_msgSender()].usedTicket++;
+                totalUsedTicket++;
+                tokenIds[index] = tokenId_;
+            }
+        }
+        emit Claim(_msgSender(), tokenIds);
     }
 
     function setMinter(address _newMinter) public onlyOwner {
