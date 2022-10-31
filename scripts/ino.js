@@ -8,10 +8,10 @@ const hre = require("hardhat");
 const _buyToken = "0x0000000000000000000000000000000000000000"; // KAI
 const _tier = "0x104D8e975600a4c7C93faD7850F6927964B0aa94";
 const _snapshotForm = 1;
-const _snapshotTo = 3
-const _startTime = "1666759200";
-const _endTime = "1666761600";
-const _tierBuySchedules = ["1666760400","1666760100","1666759800","1666759500","1666759200"] //  [tier 1, tier 2, tier 3, tier 4, tier 5]
+const _snapshotTo = 5;
+const _startTime = "1666865700";
+const _endTime = "1666867200";
+const _tierBuySchedules = ["1666866900","1666866600","1666866300","1666866000","1666865700"] //  [tier 1, tier 2, tier 3, tier 4, tier 5]
 
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
@@ -44,6 +44,10 @@ async function main() {
   const tx = await erc721MinterAdapter.setINOContract(erc721INO.address, { gasLimit: 30000000 })
   console.log("Set INO Contract", tx.hash)
 
+  const INOManager = await hre.ethers.getContractFactory("INOManager");
+  const inoManager = await INOManager.attach("0x1A1a98C3D3F08B5C8e3cabaa1684eAC3847fb437");
+  const tx1 = await inoManager.addINO(erc721INO.address, nftMockup.address, { gasLimit: 30000000 })
+  console.log("Set addINO Contract", tx1.hash)
 }
 
 // We recommend this pattern to be able to use async/await everywhere
@@ -54,5 +58,3 @@ main()
     console.error(error);
     process.exit(1);
   });
-
-  // FundRaising deployed to: 0xB8b177170deC5ecC647E87F37206f03321C5303d

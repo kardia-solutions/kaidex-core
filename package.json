@@ -29,6 +29,7 @@
     "deploy-ido-vesting": "npx hardhat run --network kai scripts/ido-vesting.js",
     "deploy-erc721-market": "npx hardhat run --network kai scripts/erc721-market.js",
     "deploy-ino": "npx hardhat run --network kai scripts/ino.js",
+    "deploy-ino-wl": "npx hardhat run --network kai scripts/ino-whitelist.js",
     "deploy-ido-refundable": "npx hardhat run --network kai scripts/ido-refundable.js",
     "test-masterchef": "npx hardhat test test/masterchef-test.js",
     "test-masterchefv2": "npx hardhat test test/masterchefv2-test.js",
@@ -57,6 +58,7 @@
     "flat-erc721-market": "npx hardhat flatten contracts/nft-marketplace/ERC721NFTMarket.sol > flatten_files/ERC721NFTMarket_flat.sol",
     "flat-ido-vesting": "npx hardhat flatten contracts/launchpad/vesting/IDOVesting.sol > flatten_files/IDOVesting_flat.sol",
     "flat-ino": "npx hardhat flatten contracts/nft-marketplace/INO/ERC721INO.sol > flatten_files/ERC721INO_flat.sol && npx hardhat flatten contracts/nft-marketplace/INO/ERC721MinterAdapter.sol > flatten_files/ERC721MinterAdapter_flat.sol",
+    "flat-ino-wl": "npx hardhat flatten contracts/nft-marketplace/INO/whitelist-ino/ERC721INOWhitelist.sol > flatten_files/ERC721INOWhitelist_flat.sol && npx hardhat flatten contracts/nft-marketplace/INO/whitelist-ino/ERC721MinterAdapterWhitelist.sol > flatten_files/ERC721MinterAdapterWhitelist_flat.sol",
     "flat-whitelist-ido": "npx hardhat flatten contracts/launchpad/whitelist/WhitelistRaisingV2.sol > flatten_files/WhitelistRaisingV2_flat.sol"
   },
   "dependencies": {
