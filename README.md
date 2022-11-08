@@ -4,5 +4,5 @@
 - Staking
 - Launchpad
 - INO
-- NFT Marketplace
+- NFT Marketplace (ERC721, ERC1155)
 - CrossChain Swap
