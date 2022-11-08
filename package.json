@@ -57,9 +57,11 @@
     "flat-anyswap-codec": "npx hardhat flatten contracts/crosschain-swap/codecs/SwapExactTokensForTokensCodec.sol > flatten_files/SwapExactTokensForTokensCodec_flat.sol",
     "flat-erc721-market": "npx hardhat flatten contracts/nft-marketplace/ERC721NFTMarket.sol > flatten_files/ERC721NFTMarket_flat.sol",
     "flat-ido-vesting": "npx hardhat flatten contracts/launchpad/vesting/IDOVesting.sol > flatten_files/IDOVesting_flat.sol",
-    "flat-ino": "npx hardhat flatten contracts/nft-marketplace/INO/ERC721INO.sol > flatten_files/ERC721INO_flat.sol && npx hardhat flatten contracts/nft-marketplace/INO/ERC721MinterAdapter.sol > flatten_files/ERC721MinterAdapter_flat.sol",
+    "flat-ino": "npx hardhat flatten contracts/nft-marketplace/INO/ERC721INO.sol > flatten_files/ERC721INO_flat.sol && npx hardhat flatten contracts/nft-marketplace/INO/ERC721MinterAdapter.sol > flatten_files/ERC721MinterAdapter_flat.sol && npx hardhat flatten contracts/nft-marketplace/INO/NFTMockup.sol > flatten_files/NFTMockup_flat.sol",
     "flat-ino-wl": "npx hardhat flatten contracts/nft-marketplace/INO/whitelist-ino/ERC721INOWhitelist.sol > flatten_files/ERC721INOWhitelist_flat.sol && npx hardhat flatten contracts/nft-marketplace/INO/whitelist-ino/ERC721MinterAdapterWhitelist.sol > flatten_files/ERC721MinterAdapterWhitelist_flat.sol",
-    "flat-whitelist-ido": "npx hardhat flatten contracts/launchpad/whitelist/WhitelistRaisingV2.sol > flatten_files/WhitelistRaisingV2_flat.sol"
+    "flat-whitelist-ido": "npx hardhat flatten contracts/launchpad/whitelist/WhitelistRaisingV2.sol > flatten_files/WhitelistRaisingV2_flat.sol",
+    "flat-nft-market-v1": "npx hardhat flatten contracts/nft-marketplace/erc721-marketplace/ERC721NFTMarketV1.sol > flatten_files/ERC721NFTMarketV1_flat.sol"
+
   },
   "dependencies": {
     "@boringcrypto/boring-solidity": "github:boringcrypto/BoringSolidity",
