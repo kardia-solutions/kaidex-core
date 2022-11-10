@@ -8,12 +8,12 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "./ERC1155NFTFeeDistributor.sol";
+import "./ERC1155NFTCollectionManager.sol";
 import "../interfaces/IWETH.sol";
 import "../../libraries/TransferHelper.sol";
 
 
-contract ERC1155NFTMarket is ERC1155NFTFeeDistributor, ReentrancyGuard {
+contract ERC1155NFTMarket is ERC1155NFTCollectionManager, ReentrancyGuard {
     
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -37,6 +37,7 @@ contract ERC1155NFTMarket is ERC1155NFTFeeDistributor, ReentrancyGuard {
 
     // nft => tokenId => ask
     mapping(address => mapping(uint256 => Ask)) public asks;
+    mapping(address => EnumerableSet.UintSet) private _askTokenIds; // Set of tokenIds for a collection
     // nft => tokenId => bidder=> bid
     mapping(address => mapping(uint256 => mapping(address => BidEntry))) public bids;
 
@@ -104,7 +105,7 @@ contract ERC1155NFTMarket is ERC1155NFTFeeDistributor, ReentrancyGuard {
         address _weth,
         address _feeRecipient,
         uint256 _feePercent
-    ) ERC1155NFTFeeDistributor(_feeRecipient, _feePercent) {
+    ) ERC1155NFTCollectionManager(_feeRecipient, _feePercent) {
         WETH = _weth;
     }
 
@@ -133,6 +134,7 @@ contract ERC1155NFTMarket is ERC1155NFTFeeDistributor, ReentrancyGuard {
             price: _price,
             amounts: _amounts
         });
+        _askTokenIds[_nft].add(_tokenId);
         emit AskNew(_msgSender(), _nft, _tokenId, _quoteToken, _price, _amounts);
     }
 
@@ -153,6 +155,7 @@ contract ERC1155NFTMarket is ERC1155NFTFeeDistributor, ReentrancyGuard {
 
         if (_amounts == asks[_nft][_tokenId].amounts) {
             delete asks[_nft][_tokenId];
+            _askTokenIds[_nft].remove(_tokenId);
         } else {
             asks[_nft][_tokenId].amounts -= _amounts;
         }
@@ -202,6 +205,7 @@ contract ERC1155NFTMarket is ERC1155NFTFeeDistributor, ReentrancyGuard {
         IERC1155(_nft).safeTransferFrom(address(this), _msgSender(), _tokenId, _amounts, "");
         if (_amounts == ask.amounts) {
             delete asks[_nft][_tokenId];
+            _askTokenIds[_nft].remove(_tokenId);
         } else {
             asks[_nft][_tokenId].amounts -= _amounts;
         }
@@ -274,6 +278,7 @@ contract ERC1155NFTMarket is ERC1155NFTFeeDistributor, ReentrancyGuard {
 
         if (asks[_nft][_tokenId].amounts == _amounts) {
             delete asks[_nft][_tokenId];
+            _askTokenIds[_nft].remove(_tokenId);
         } else {
             asks[_nft][_tokenId].amounts -= _amounts;
         }
@@ -356,12 +361,65 @@ contract ERC1155NFTMarket is ERC1155NFTFeeDistributor, ReentrancyGuard {
         require(bid.price > 0, "Bid: bid not found");
         require(bid.amounts >= _amounts, "Bid: Incorrect amounts");
         uint256 returnAmount = bid.price.mul(_amounts);
-        IERC20(bid.quoteToken).safeTransfer(_msgSender(), bid.price);
+        IERC20(bid.quoteToken).safeTransfer(_msgSender(), returnAmount);
         if (bid.amounts == _amounts) {
             delete bids[_nft][_tokenId][_msgSender()];
         } else {
             bids[_nft][_tokenId][_msgSender()].amounts -= _amounts;
         }
         emit CancelBid(_msgSender(), _nft, _tokenId, _amounts);
+    }
+
+    function viewAsksByCollectionAndTokenIds(address _collection, uint256[] calldata _tokenIds)
+        external
+        view
+        returns (bool[] memory statuses, Ask[] memory askInfo)
+    {
+        uint256 length = _tokenIds.length;
+
+        statuses = new bool[](length);
+        askInfo = new Ask[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            if (_askTokenIds[_collection].contains(_tokenIds[i])) {
+                statuses[i] = true;
+            } else {
+                statuses[i] = false;
+            }
+
+            askInfo[i] = asks[_collection][_tokenIds[i]];
+        }
+
+        return (statuses, askInfo);
+    }
+
+    function viewAsksByCollection(
+        address _collection,
+        uint256 _cursor,
+        uint256 _size
+    )
+        external
+        view
+        returns (
+            uint256[] memory tokenIds,
+            Ask[] memory askInfo,
+            uint256
+        )
+    {
+        uint256 length = _size;
+
+        if (length > _askTokenIds[_collection].length() - _cursor) {
+            length = _askTokenIds[_collection].length() - _cursor;
+        }
+
+        tokenIds = new uint256[](length);
+        askInfo = new Ask[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            tokenIds[i] = _askTokenIds[_collection].at(_cursor + i);
+            askInfo[i] = asks[_collection][tokenIds[i]];
+        }
+
+        return (tokenIds, askInfo, _cursor + length);
     }
 }

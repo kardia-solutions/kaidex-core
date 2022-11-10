@@ -314,4 +314,57 @@ contract ERC721NFTMarket is
         emit CancelBid(_msgSender(), _nft, _tokenId);
     }
 
+    function viewAsksByCollectionAndTokenIds(address _collection, uint256[] calldata _tokenIds)
+        external
+        view
+        returns (bool[] memory statuses, Ask[] memory askInfo)
+    {
+        uint256 length = _tokenIds.length;
+
+        statuses = new bool[](length);
+        askInfo = new Ask[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            if (_askTokenIds[_collection].contains(_tokenIds[i])) {
+                statuses[i] = true;
+            } else {
+                statuses[i] = false;
+            }
+
+            askInfo[i] = asks[_collection][_tokenIds[i]];
+        }
+
+        return (statuses, askInfo);
+    }
+
+    function viewAsksByCollection(
+        address _collection,
+        uint256 _cursor,
+        uint256 _size
+    )
+        external
+        view
+        returns (
+            uint256[] memory tokenIds,
+            Ask[] memory askInfo,
+            uint256
+        )
+    {
+        uint256 length = _size;
+
+        if (length > _askTokenIds[_collection].length() - _cursor) {
+            length = _askTokenIds[_collection].length() - _cursor;
+        }
+
+        tokenIds = new uint256[](length);
+        askInfo = new Ask[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            tokenIds[i] = _askTokenIds[_collection].at(_cursor + i);
+            askInfo[i] = asks[_collection][tokenIds[i]];
+        }
+
+        return (tokenIds, askInfo, _cursor + length);
+    }
+
 }

@@ -37,6 +37,7 @@
     "test-tier": "npx hardhat test test/tiersystem-test.js",
     "test-ido": "npx hardhat test test/fundraising.js",
     "test-whitelist-ido": "npx hardhat test test/whitelist-ido.js",
+    "test-erc721-market": "npx hardhat test test/erc721-market-test.js",
     "flat-kdx": "npx hardhat flatten contracts/KaidexToken.sol > flatten_files/KaidexToken_flat.sol",
     "flat-factory": "npx hardhat flatten contracts/exchange/Factory.sol > flatten_files/Factory_flat.sol",
     "flat-router": "npx hardhat flatten contracts/exchange/KaiDexRouter.sol > flatten_files/KaidexRouter_flat.sol",

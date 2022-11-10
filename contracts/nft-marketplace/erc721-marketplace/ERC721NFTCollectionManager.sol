@@ -94,7 +94,7 @@ contract ERC721NFTCollectionManager is Ownable {
     function setProtocolFeeRecipient(address _recipient) external onlyOwner {
         require(
             _recipient != address(0),
-            "Erc721NFTFeeDistributor: zero address"
+            "ERC721NFTCollectionManager: zero address"
         );
         protocolFeeRecipient = _recipient;
     }
